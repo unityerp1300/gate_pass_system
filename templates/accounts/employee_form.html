@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-person-plus me-2"></i>{{ title }}</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'accounts:employee_list' %}">Employees</a></li>
+            <li class="breadcrumb-item active">{{ title }}</li>
+        </ol></nav>
+    </div>
+</div>
+
+<form method="post">
+{% csrf_token %}
+<div class="row g-4">
+
+    <!-- Employee Info -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-person-vcard me-2"></i>Employee Information</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Employee Name *</label>
+                        {{ form.employee_name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Employee Code *</label>
+                        {{ form.employee_code }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Joining Date</label>
+                        {{ form.joining_date }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Primary Department</label>
+                        {{ form.department }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Additional Departments</label>
+                        {{ form.additional_departments }}
+                        <small class="text-muted">Hold Ctrl to select multiple.</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Designation</label>
+                        {{ form.designation }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Primary Role</label>
+                        {{ form.role }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Additional Roles</label>
+                        {{ form.additional_roles }}
+                        <small class="text-muted">Hold Ctrl to select multiple.</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Reporting Person</label>
+                        {{ form.reporting_person }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Email Address *</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Username *</label>
+                        {{ form.username }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Password (Admin View)</label>
+                        {{ form.password_plain }}
+                        <small class="text-muted">Leave blank to keep current. New accounts get OTP <strong>123456</strong>.</small>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            {{ form.is_active }}
+                            <label class="form-check-label fw-semibold">Active Account</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Role & Permissions (read-only display, controlled via System Settings) -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-shield-check me-2"></i>Role & Permissions</span>
+                <a href="{% url 'accounts:system_settings' %}#tab-roles" class="btn btn-outline-primary btn-sm" target="_blank">
+                    <i class="bi bi-gear me-1"></i>Manage in Settings
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info border-0 mb-3" style="font-size:13px;">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Permissions are automatically applied based on the employee's <strong>Primary Role</strong> as configured in
+                    <a href="{% url 'accounts:system_settings' %}" target="_blank">System Settings → Role Permissions</a>.
+                    Change the role above to update permissions.
+                </div>
+
+                <!-- Current permissions summary (read-only) -->
+                {% if form.instance.pk %}
+                <div id="perm-summary">
+                    <div class="row g-2">
+                        {% for module, perms in perm_summary %}
+                        <div class="col-12">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-semibold" style="font-size:12px;color:#2A2A86;min-width:160px;">{{ module }}</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for perm_label, has_perm in perms %}
+                                    <span class="badge {% if has_perm %}bg-success{% else %}bg-light text-muted{% endif %}" style="font-size:10px;">
+                                        {% if has_perm %}<i class="bi bi-check me-1"></i>{% else %}<i class="bi bi-x me-1"></i>{% endif %}{{ perm_label }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-muted text-center py-3" style="font-size:13px;">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Permissions will be applied automatically based on the selected role after saving.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-check-circle me-2"></i>Save Employee
+            </button>
+            <a href="{% url 'accounts:employee_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+        </div>
+    </div>
+
+</div>
+</form>
+{% endblock %}

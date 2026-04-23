@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Visitor Pass Action{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-6">
+    <div class="card shadow">
+      <div class="card-header bg-primary text-white"><h5 class="mb-0">Visitor Pass — {{ vgp.pass_number }}</h5></div>
+      <div class="card-body">
+        <p><strong>Visitor:</strong> {{ vgp.visitor_name }}</p>
+        <p><strong>Organization:</strong> {{ vgp.visitor_company|default:'-' }}</p>
+        <p><strong>Purpose:</strong> {{ vgp.get_visit_purpose_display }}</p>
+        <p><strong>Date:</strong> {{ vgp.visit_date }}</p>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action_choice" value="{{ action }}">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Remarks (optional)</label>
+            <textarea name="remarks" class="form-control" rows="3"></textarea>
+          </div>
+          {% if action == 'approve' %}
+          <button type="submit" class="btn btn-success w-100"><i class="bi bi-check-circle me-2"></i>Confirm Approve</button>
+          {% else %}
+          <button type="submit" class="btn btn-danger w-100"><i class="bi bi-x-circle me-2"></i>Confirm Reject</button>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

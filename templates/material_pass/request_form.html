@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-file-earmark-plus me-2"></i>{{ title }}</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'material_pass:request_list' %}">Material Gate Pass Requests</a></li>
+            <li class="breadcrumb-item active">New</li>
+        </ol></nav>
+    </div>
+</div>
+
+<form method="post" id="mgp-request-form">
+{% csrf_token %}
+
+<!-- Request Info -->
+<div class="card mb-3">
+    <div class="card-header fw-semibold"><i class="bi bi-info-circle me-2"></i>Request Information</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Department *</label>
+                {{ form.department }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Request Date *</label>
+                {{ form.request_date }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Required By Date</label>
+                {{ form.expected_date }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label d-block">Material Type *</label>
+                <div class="d-flex gap-3 mt-1">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="returnable_choice" id="chk_ret" value="1" {% if form.is_returnable.value %}checked{% endif %}>
+                        <label class="form-check-label" for="chk_ret">Returnable</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="returnable_choice" id="chk_nonret" value="0" {% if not form.is_returnable.value %}checked{% endif %}>
+                        <label class="form-check-label" for="chk_nonret">Non-Returnable</label>
+                    </div>
+                </div>
+                <div style="display:none;">{{ form.is_returnable }}</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Reason / Purpose *</label>
+                {{ form.reason }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Remarks</label>
+                {{ form.remarks }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Items -->
+<div class="card mb-3">
+    <div class="card-header fw-semibold"><i class="bi bi-list-ul me-2"></i>Requested Items</div>
+    <div class="card-body p-0">
+        {{ formset.management_form }}
+        <div class="table-responsive">
+        <table class="table table-bordered table-sm mb-0" id="items-table">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:30px;">#</th>
+                    <th>Item Description *</th>
+                    <th style="width:90px;">HSN Code</th>
+                    <th style="width:80px;">Quantity *</th>
+                    <th style="width:80px;">Unit</th>
+                    <th>Remarks</th>
+                    <th style="width:40px;"></th>
+                </tr>
+            </thead>
+            <tbody id="items-body">
+            {% for item_form in formset %}
+            <tr class="item-row">
+                {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+                <td class="text-center text-muted row-num">{{ forloop.counter }}</td>
+                <td>{{ item_form.description }}</td>
+                <td>{{ item_form.hsn_code }}</td>
+                <td>{{ item_form.quantity }}</td>
+                <td>{{ item_form.unit }}</td>
+                <td>{{ item_form.remarks }}</td>
+                <td>
+                    {% if formset.can_delete %}
+                    <div class="form-check d-flex justify-content-center">{{ item_form.DELETE }}</div>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        <div class="p-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" id="add-item">
+                <i class="bi bi-plus-circle me-1"></i>Add Item
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary"><i class="bi bi-send me-1"></i>Submit to Store</button>
+    <a href="{% url 'material_pass:request_list' %}" class="btn btn-outline-secondary">Cancel</a>
+</div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const chkRet = document.getElementById('chk_ret');
+const chkNon = document.getElementById('chk_nonret');
+const hiddenChk = document.getElementById('id_is_returnable');
+function syncRet() { hiddenChk.checked = chkRet.checked; }
+chkRet.addEventListener('change', syncRet);
+chkNon.addEventListener('change', syncRet);
+syncRet();
+
+const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+document.getElementById('add-item').addEventListener('click', function () {
+    const rows = document.querySelectorAll('#items-body .item-row');
+    const idx  = rows.length;
+    const clone = rows[0].cloneNode(true);
+    clone.querySelectorAll('input, textarea').forEach(inp => {
+        inp.name  = inp.name.replace(/-\d+-/, `-${idx}-`);
+        inp.id    = inp.id.replace(/-\d+-/, `-${idx}-`);
+        inp.value = '';
+        if (inp.type === 'checkbox') inp.checked = false;
+    });
+    clone.querySelector('.row-num').textContent = idx + 1;
+    document.getElementById('items-body').appendChild(clone);
+    totalForms.value = idx + 1;
+});
+
+function getInvalidFieldLabel(field) {
+    const formLabel = field.closest('.col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-6, .col-md-12, .col-12, .mb-3')?.querySelector('.form-label');
+    if (formLabel) return formLabel.textContent.replace('*', '').trim();
+    const cell = field.closest('td');
+    if (cell) {
+        const idx = Array.from(cell.parentElement.children).indexOf(cell);
+        const th = cell.closest('table')?.querySelectorAll('thead th')[idx];
+        if (th) return th.textContent.replace('*', '').trim();
+    }
+    return field.name || 'required field';
+}
+
+document.getElementById('mgp-request-form').addEventListener('submit', function (e) {
+    if (this.checkValidity()) return;
+    e.preventDefault();
+    const invalidField = this.querySelector(':invalid');
+    if (!invalidField) return;
+    alert(`Please fill the mandatory field: ${getInvalidFieldLabel(invalidField)}.`);
+    if (typeof invalidField.reportValidity === 'function') invalidField.reportValidity();
+    invalidField.focus();
+});
+</script>
+{% endblock %}

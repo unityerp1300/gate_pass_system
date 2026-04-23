@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}{{ gp.pass_number }}{% endblock %}
+{% block page_title %}Gate Pass Detail{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline { position: relative; padding-left: 0; list-style: none; }
+.timeline-item { display: flex; gap: 16px; margin-bottom: 0; position: relative; }
+.timeline-item:not(:last-child) .tl-line { position: absolute; left: 19px; top: 40px; bottom: -10px; width: 2px; background: #e2e8f0; z-index: 0; }
+.tl-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; z-index: 1; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.tl-icon.approved  { background: #d1e7dd; color: #0f5132; }
+.tl-icon.rejected  { background: #f8d7da; color: #842029; }
+.tl-icon.pending   { background: #fff3cd; color: #856404; }
+.tl-body { flex: 1; padding-bottom: 24px; }
+.tl-title { font-weight: 600; font-size: 14px; color: #2A2A86; }
+.tl-meta  { font-size: 12px; color: #718096; }
+.tl-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+.badge-approved { background: #d1e7dd; color: #0f5132; }
+.badge-rejected  { background: #f8d7da; color: #842029; }
+.badge-pending   { background: #fff3cd; color: #856404; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-file-earmark-text me-2"></i>{{ gp.pass_number }}</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'internal_pass:pass_list' %}">Internal Gate Pass</a></li>
+            <li class="breadcrumb-item active">{{ gp.pass_number }}</li>
+        </ol></nav>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'internal_pass:print_pass' gp.pk %}" class="btn btn-dark btn-sm" target="_blank">
+            <i class="bi bi-printer me-1"></i>Print
+        </a>
+        {% if can_act and gp.status in 'pending,in_progress' %}
+        <a href="{% url 'internal_pass:pass_approve' gp.pk %}" class="btn btn-success btn-sm">
+            <i class="bi bi-check-circle me-1"></i>Approve / Reject
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Pass Info -->
+    <div class="col-md-7">
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-info-circle me-2"></i>Pass Information</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6"><div class="text-muted small">Pass Number</div><div class="fw-semibold">{{ gp.pass_number }}</div></div>
+                    <div class="col-6">
+                        <div class="text-muted small">Status</div>
+                        <span class="badge badge-{{ gp.status }} px-3 py-2 rounded-pill">
+                            {% if gp.status == 'in_progress' %}In Progress{% else %}{{ gp.get_status_display }}{% endif %}
+                        </span>
+                    </div>
+                    <div class="col-6"><div class="text-muted small">Employee</div><div class="fw-semibold">{{ gp.employee.employee_name }}</div></div>
+                    <div class="col-6"><div class="text-muted small">Employee Code</div><div>{{ gp.employee.employee_code }}</div></div>
+                    <div class="col-6"><div class="text-muted small">Department</div><div>{{ gp.employee.department }}</div></div>
+                    <div class="col-6"><div class="text-muted small">Designation</div><div>{{ gp.employee.designation }}</div></div>
+                    <div class="col-6"><div class="text-muted small">Purpose</div><div>{{ gp.get_purpose_display }}</div></div>
+                    <div class="col-6"><div class="text-muted small">Destination</div><div>{{ gp.destination }}</div></div>
+                    <div class="col-12"><div class="text-muted small">Purpose Details</div><div>{{ gp.purpose_detail }}</div></div>
+                    <div class="col-4"><div class="text-muted small">Out Date</div><div>{{ gp.out_date }}</div></div>
+                    <div class="col-4"><div class="text-muted small">Out Time</div><div>{{ gp.out_time }}</div></div>
+                    <div class="col-4"><div class="text-muted small">Expected Return</div><div>{{ gp.expected_return_time }}</div></div>
+                    <div class="col-6"><div class="text-muted small">Transport Mode</div><div>{{ gp.get_transport_mode_display }}</div></div>
+                    <div class="col-6"><div class="text-muted small">Vehicle Number</div><div>{{ gp.vehicle_number|default:'-' }}</div></div>
+                </div>
+            </div>
+        </div>
+
+        {% if gp.status == 'approved' %}
+        <a href="{% url 'internal_pass:mark_returned' gp.pk %}" class="btn btn-info w-100 mb-3">
+            <i class="bi bi-arrow-return-left me-2"></i>Mark as Returned
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Approval Timeline -->
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-diagram-3 me-2"></i>Approval Workflow</div>
+            <div class="card-body">
+                {% if stages %}
+                <ul class="timeline">
+                    {% for stage in stages %}
+                    <li class="timeline-item">
+                        <div class="tl-line"></div>
+                        <div class="tl-icon {{ stage.status }}">
+                            {% if stage.status == 'approved' %}<i class="bi bi-check-lg"></i>
+                            {% elif stage.status == 'rejected' %}<i class="bi bi-x-lg"></i>
+                            {% else %}<i class="bi bi-hourglass-split"></i>{% endif %}
+                        </div>
+                        <div class="tl-body">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="tl-title">Stage {{ stage.stage|add:1 }}: {{ stage.stage_label }}</span>
+                                <span class="tl-badge badge-{{ stage.status }}">{{ stage.status|upper }}</span>
+                            </div>
+                            {% if stage.approver %}
+                            <div class="tl-meta"><i class="bi bi-person me-1"></i>{{ stage.approver.employee_name }} ({{ stage.approver.get_role_display }})</div>
+                            {% else %}
+                            <div class="tl-meta text-muted"><i class="bi bi-clock me-1"></i>Awaiting {{ stage.stage_label }}</div>
+                            {% endif %}
+                            {% if stage.acted_at %}
+                            <div class="tl-meta"><i class="bi bi-calendar3 me-1"></i>{{ stage.acted_at|date:"d M Y, H:i" }}</div>
+                            {% endif %}
+                            {% if stage.remarks %}
+                            <div class="tl-meta mt-1 p-2 rounded" style="background:#f8f9fa;font-style:italic;">
+                                "{{ stage.remarks }}"
+                            </div>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-muted small text-center py-3">No approval stages defined.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% block title %}Visitor Gate Pass{% endblock %}
+{% block page_title %}Visitor Gate Pass{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-person-badge-fill me-2"></i>Visitor Gate Pass</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Visitor Gate Pass</li>
+        </ol></nav>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'visitor_pass:daily_report' %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-file-earmark-bar-graph me-1"></i>Daily Report
+        </a>
+        <a href="{% url 'visitor_pass:monthly_report' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-calendar-month me-1"></i>Monthly Report
+        </a>
+        <a href="{% url 'visitor_pass:pass_create' %}" class="btn btn-success btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>New Visitor Pass
+        </a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <span class="text-muted small fw-semibold">Filter:</span>
+            <a href="?" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">All</a>
+            <a href="?status=pending" class="btn btn-sm {% if status_filter == 'pending' %}btn-warning{% else %}btn-outline-warning{% endif %}">Pending</a>
+            <a href="?status=approved" class="btn btn-sm {% if status_filter == 'approved' %}btn-success{% else %}btn-outline-success{% endif %}">Approved</a>
+            <a href="?status=rejected" class="btn btn-sm {% if status_filter == 'rejected' %}btn-danger{% else %}btn-outline-danger{% endif %}">Rejected</a>
+            <a href="?status=checked_out" class="btn btn-sm {% if status_filter == 'checked_out' %}btn-info{% else %}btn-outline-info{% endif %}">Checked Out</a>
+            <form method="get" class="ms-auto d-flex gap-1" style="min-width:240px;">
+                <input type="hidden" name="status" value="{{ status_filter }}">
+                <input type="text" name="q" value="{{ search }}"
+                       class="form-control form-control-sm"
+                       placeholder="Search name, phone, company, pass no...">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i></button>
+                {% if search %}
+                <a href="?status={{ status_filter }}" class="btn btn-sm btn-outline-secondary" title="Clear"><i class="bi bi-x"></i></a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+<form method="post" action="{% url 'visitor_pass:bulk_action' %}" id="bulkForm">
+{% csrf_token %}
+
+<!-- Bulk action toolbar (hidden until checkbox selected) -->
+<div id="bulkToolbar" class="d-none mb-2 d-flex gap-2 align-items-center">
+    <span class="text-muted small" id="selectedCount">0 selected</span>
+    <button type="submit" name="action" value="duplicate" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-copy me-1"></i>Duplicate
+    </button>
+    <button type="submit" name="action" value="cancel" class="btn btn-sm btn-outline-warning"
+            onclick="return confirm('Cancel selected passes?')">
+        <i class="bi bi-x-circle me-1"></i>Cancel
+    </button>
+    <button type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger"
+            onclick="return confirm('Permanently delete selected passes?')">
+        <i class="bi bi-trash me-1"></i>Delete
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:36px;">
+                            <input type="checkbox" id="checkAll" class="form-check-input">
+                        </th>
+                        <th>#</th><th>Pass No</th><th>Visitor</th><th>Company</th><th>Phone</th>
+                        <th>Purpose</th><th>Person to Meet</th><th>Date</th>
+                        <th>In Time</th><th>Status</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for vgp in passes %}
+                <tr>
+                    <td><input type="checkbox" name="selected_ids" value="{{ vgp.pk }}" class="form-check-input row-check"></td>
+                    <td class="text-muted">{{ page_obj.start_index|add:forloop.counter0 }}</td>
+                    <td><a href="{% url 'visitor_pass:pass_detail' vgp.pk %}" class="fw-semibold text-decoration-none text-success">{{ vgp.pass_number }}</a></td>
+                    <td>{{ vgp.visitor_name }}</td>
+                    <td>{{ vgp.visitor_company|default:'-' }}</td>
+                    <td>{{ vgp.visitor_phone }}</td>
+                    <td>{{ vgp.get_visit_purpose_display }}</td>
+                    <td>{{ vgp.person_to_meet.employee_name }}</td>
+                    <td>{{ vgp.visit_date }}</td>
+                    <td>{{ vgp.in_time }}</td>
+                    <td>
+                        <span class="badge badge-{{ vgp.status }} px-2 py-1 rounded-pill">{{ vgp.get_status_display }}</span>
+                        {% if vgp.approved_by %}
+                        <br><small class="text-muted"><i class="bi bi-person-check me-1"></i>{{ vgp.approved_by.employee_name }}</small>
+                        {% endif %}
+                        {% if vgp.approved_at %}
+                        <br><small class="text-muted">{{ vgp.approved_at|date:"d M, H:i" }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'visitor_pass:pass_detail' vgp.pk %}" class="btn btn-sm btn-outline-secondary" title="View"><i class="bi bi-eye"></i></a>
+                            {% if vgp.status == 'approved' or vgp.status == 'pending' %}
+                            <a href="{% url 'visitor_pass:print_pass' vgp.pk %}" class="btn btn-sm btn-outline-dark" title="Print" target="_blank"><i class="bi bi-printer"></i></a>
+                            {% endif %}
+                            {% if request.user.can_approve_visitor_pass or request.user.is_superuser %}
+                            {% if vgp.status == 'pending' %}
+                            <a href="{% url 'visitor_pass:pass_approve' vgp.pk %}" class="btn btn-sm btn-outline-success" title="Approve"><i class="bi bi-check-circle"></i></a>
+                            {% endif %}
+                            {% if vgp.status == 'approved' %}
+                            <a href="{% url 'visitor_pass:checkout' vgp.pk %}" class="btn btn-sm btn-outline-info" title="Checkout"><i class="bi bi-box-arrow-right"></i></a>
+                            {% endif %}
+                            {% endif %}
+                            {% if vgp.status == 'approved' %}
+                            <button type="button" class="btn btn-sm btn-success" title="Approved"
+                                data-bs-toggle="modal" data-bs-target="#approvalModal"
+                                data-pass="{{ vgp.pass_number }}"
+                                data-visitor="{{ vgp.visitor_name }}"
+                                data-by="{{ vgp.approved_by.employee_name|default:'-' }}"
+                                data-at="{{ vgp.approved_at|date:'d M Y, H:i'|default:'-' }}"
+                                data-remarks="{{ vgp.approval_remarks|default:'-' }}">
+                                <i class="bi bi-info-circle"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="12" class="text-center text-muted py-4">No visitor passes found.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</form>
+
+{% include 'pagination.html' %}
+
+<!-- Approval Detail Modal -->
+<div class="modal fade" id="approvalModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-check-circle me-2"></i>Approval Details</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-bordered mb-0">
+          <tr><th class="text-muted" style="width:40%">Pass Number</th><td id="mp-pass" class="fw-semibold"></td></tr>
+          <tr><th class="text-muted">Visitor</th><td id="mp-visitor"></td></tr>
+          <tr><th class="text-muted">Approved By</th><td id="mp-by" class="text-success fw-semibold"></td></tr>
+          <tr><th class="text-muted">Approved At</th><td id="mp-at"></td></tr>
+          <tr><th class="text-muted">Remarks</th><td id="mp-remarks"></td></tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const checkAll   = document.getElementById('checkAll');
+const toolbar    = document.getElementById('bulkToolbar');
+const countLabel = document.getElementById('selectedCount');
+
+function updateToolbar() {
+    const checked = document.querySelectorAll('.row-check:checked');
+    toolbar.classList.toggle('d-none', checked.length === 0);
+    countLabel.textContent = checked.length + ' selected';
+}
+checkAll.addEventListener('change', () => {
+    document.querySelectorAll('.row-check').forEach(cb => cb.checked = checkAll.checked);
+    updateToolbar();
+});
+document.querySelectorAll('.row-check').forEach(cb => cb.addEventListener('change', updateToolbar));
+
+// Populate approval modal
+document.getElementById('approvalModal').addEventListener('show.bs.modal', e => {
+    const btn = e.relatedTarget;
+    document.getElementById('mp-pass').textContent    = btn.dataset.pass;
+    document.getElementById('mp-visitor').textContent = btn.dataset.visitor;
+    document.getElementById('mp-by').textContent      = btn.dataset.by;
+    document.getElementById('mp-at').textContent      = btn.dataset.at;
+    document.getElementById('mp-remarks').textContent = btn.dataset.remarks;
+});
+</script>
+{% endblock %}

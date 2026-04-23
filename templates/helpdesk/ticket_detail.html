@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% block title %}{{ ticket.ticket_number }}{% endblock %}
+{% block page_title %}Ticket Detail{% endblock %}
+
+{% block extra_css %}
+<style>
+.priority-critical{background:#f8d7da;color:#842029;}
+.priority-high{background:#fff3cd;color:#856404;}
+.priority-medium{background:#d1e7dd;color:#0f5132;}
+.priority-low{background:#e2e3e5;color:#383d41;}
+.status-open{background:#cfe2ff;color:#084298;}
+.status-in_progress{background:#fff3cd;color:#856404;}
+.status-on_hold{background:#e2e3e5;color:#383d41;}
+.status-resolved{background:#d1e7dd;color:#0f5132;}
+.status-closed{background:#f8f9fa;color:#6c757d;}
+.badge-status,.badge-priority{font-size:11px;padding:4px 12px;border-radius:20px;font-weight:600;}
+.comment-box{background:#f8fafc;border-radius:10px;padding:14px 16px;margin-bottom:12px;border-left:3px solid #e2e8f0;}
+.comment-box.internal{border-left-color:#f0a500;background:#fffbf0;}
+.comment-box.own{border-left-color:#2A2A86;background:#f0f4ff;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-ticket-detailed me-2"></i>{{ ticket.ticket_number }}</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'helpdesk:dashboard' %}">Help Desk</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'helpdesk:ticket_list' %}">Tickets</a></li>
+            <li class="breadcrumb-item active">{{ ticket.ticket_number }}</li>
+        </ol></nav>
+    </div>
+    {% if ticket.status != 'closed' %}
+    <a href="{% url 'helpdesk:ticket_close' ticket.pk %}"
+       class="btn btn-outline-secondary btn-sm"
+       onclick="return confirm('Close this ticket?')">
+        <i class="bi bi-x-circle me-1"></i>Close Ticket
+    </a>
+    {% endif %}
+</div>
+
+<div class="row g-4">
+    <!-- Left: Ticket Info + Comments -->
+    <div class="col-lg-8">
+        <!-- Ticket Info -->
+        <div class="card mb-4">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-info-circle me-2"></i>{{ ticket.title }}</span>
+                <div class="d-flex gap-2">
+                    <span class="badge-priority priority-{{ ticket.priority }}">{{ ticket.get_priority_display }}</span>
+                    <span class="badge-status status-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4"><div class="text-muted small">Ticket No</div><div class="fw-semibold">{{ ticket.ticket_number }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">Category</div><div>{{ ticket.get_category_display }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">Raised By</div><div>{{ ticket.raised_by.employee_name }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">DocType</div><div>{{ ticket.get_doc_type_display }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">Department</div><div>{{ ticket.raised_by.department }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">Assigned To</div><div>{{ ticket.assigned_to.employee_name|default:'Unassigned' }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">Created</div><div>{{ ticket.created_at|date:"d M Y, H:i" }}</div></div>
+                    {% if ticket.resolved_at %}
+                    <div class="col-md-4"><div class="text-muted small">Resolved At</div><div>{{ ticket.resolved_at|date:"d M Y, H:i" }}</div></div>
+                    {% endif %}
+                </div>
+                <div class="text-muted small mb-1">Description</div>
+                <div style="background:#f8fafc;border-radius:8px;padding:12px;font-size:13.5px;white-space:pre-wrap;">{{ ticket.description }}</div>
+                {% if ticket.resolution_note %}
+                <div class="mt-3">
+                    <div class="text-muted small mb-1">Resolution Note</div>
+                    <div style="background:#d1e7dd;border-radius:8px;padding:12px;font-size:13.5px;">{{ ticket.resolution_note }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Comments -->
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-chat-dots me-2"></i>Comments & Updates</div>
+            <div class="card-body">
+                {% for c in comments %}
+                <div class="comment-box {% if c.is_internal %}internal{% elif c.author == request.user %}own{% endif %}">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-semibold" style="font-size:13px;">{{ c.author.employee_name }}
+                            <span class="text-muted fw-normal">({{ c.author.get_role_display }})</span>
+                            {% if c.is_internal %}<span class="badge bg-warning text-dark ms-1" style="font-size:10px;">Internal</span>{% endif %}
+                        </span>
+                        <small class="text-muted">{{ c.created_at|date:"d M Y, H:i" }}</small>
+                    </div>
+                    <div style="font-size:13.5px;white-space:pre-wrap;">{{ c.comment }}</div>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center py-2">No comments yet.</p>
+                {% endfor %}
+
+                <!-- Add Comment -->
+                {% if ticket.status != 'closed' %}
+                <form method="post" class="mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="comment">
+                    <div class="mb-2">{{ comment_form.comment }}</div>
+                    {% if is_it %}
+                    <div class="form-check mb-2">
+                        {{ comment_form.is_internal }}
+                        <label class="form-check-label" style="font-size:13px;">Internal note (only visible to IT team)</label>
+                    </div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-send me-1"></i>Add Comment
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: IT Update Panel -->
+    <div class="col-lg-4">
+        {% if is_it and ticket.status != 'closed' %}
+        <div class="card">
+            <div class="card-header"><i class="bi bi-tools me-2"></i>IT Actions</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update">
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        {{ update_form.status }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Priority</label>
+                        {{ update_form.priority }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Assign To</label>
+                        {{ update_form.assigned_to }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Resolution Note</label>
+                        {{ update_form.resolution_note }}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle me-2"></i>Update Ticket
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Ticket Timeline -->
+        <div class="card mt-3">
+            <div class="card-header"><i class="bi bi-clock-history me-2"></i>Timeline</div>
+            <div class="card-body py-2">
+                <div class="d-flex gap-2 mb-2" style="font-size:12px;">
+                    <i class="bi bi-circle-fill text-primary mt-1" style="font-size:8px;"></i>
+                    <div><div class="fw-semibold">Ticket Raised</div><div class="text-muted">{{ ticket.created_at|date:"d M Y, H:i" }}</div></div>
+                </div>
+                {% if ticket.assigned_to %}
+                <div class="d-flex gap-2 mb-2" style="font-size:12px;">
+                    <i class="bi bi-circle-fill text-warning mt-1" style="font-size:8px;"></i>
+                    <div><div class="fw-semibold">Assigned to {{ ticket.assigned_to.employee_name }}</div></div>
+                </div>
+                {% endif %}
+                {% if ticket.resolved_at %}
+                <div class="d-flex gap-2 mb-2" style="font-size:12px;">
+                    <i class="bi bi-circle-fill text-success mt-1" style="font-size:8px;"></i>
+                    <div><div class="fw-semibold">Resolved</div><div class="text-muted">{{ ticket.resolved_at|date:"d M Y, H:i" }}</div></div>
+                </div>
+                {% endif %}
+                {% if ticket.status == 'closed' %}
+                <div class="d-flex gap-2" style="font-size:12px;">
+                    <i class="bi bi-circle-fill text-secondary mt-1" style="font-size:8px;"></i>
+                    <div><div class="fw-semibold">Closed</div><div class="text-muted">{{ ticket.updated_at|date:"d M Y, H:i" }}</div></div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-person-badge-fill me-2"></i>{{ title }}</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'visitor_pass:pass_list' %}">Visitor Gate Pass</a></li>
+            <li class="breadcrumb-item active">New</li>
+        </ol></nav>
+    </div>
+</div>
+
+<div class="card" style="max-width:900px">
+    <div class="card-header"><i class="bi bi-person-plus me-2"></i>Create New Visitor Gate Pass</div>
+    <div class="card-body">
+        <form method="post" id="vgp-pass-form">
+            {% csrf_token %}
+
+            <!-- Visitor Details -->
+            <h6 class="fw-bold text-primary mb-3">Visitor Details</h6>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Visitor Name *</label>
+                    {{ form.visitor_name }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Visitor Mobile No. *</label>
+                    {{ form.visitor_phone }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Organization</label>
+                    {{ form.visitor_company }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">City</label>
+                    {{ form.visitor_city }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email Address</label>
+                    {{ form.visitor_email }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">ID Type *</label>
+                    {{ form.id_type }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">ID Number *</label>
+                    {{ form.id_number }}
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <!-- Visit Details -->
+            <h6 class="fw-bold text-primary mb-3">Visit Details</h6>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label d-flex align-items-center gap-2">
+                        Visit Date *
+                        <span class="d-flex align-items-center gap-1 ms-auto">
+                            <input type="checkbox" id="now_visit_date" class="form-check-input now-cb" data-target="id_visit_date" data-type="date">
+                            <label for="now_visit_date" class="form-check-label small text-primary fw-semibold mb-0">Today</label>
+                        </span>
+                    </label>
+                    {{ form.visit_date }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label d-flex align-items-center gap-2">
+                        In Time *
+                        <span class="d-flex align-items-center gap-1 ms-auto">
+                            <input type="checkbox" id="now_in_time" class="form-check-input now-cb" data-target="id_in_time" data-type="time">
+                            <label for="now_in_time" class="form-check-label small text-primary fw-semibold mb-0">Now</label>
+                        </span>
+                    </label>
+                    {{ form.in_time }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label d-flex align-items-center gap-2">
+                        Out Time *
+                        <span class="d-flex align-items-center gap-1 ms-auto">
+                            <input type="checkbox" id="now_out_time" class="form-check-input now-cb" data-target="id_expected_out_time" data-type="time">
+                            <label for="now_out_time" class="form-check-label small text-primary fw-semibold mb-0">Now</label>
+                        </span>
+                    </label>
+                    {{ form.expected_out_time }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Contact Person *</label>
+                    {{ form.person_to_meet }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Purpose *</label>
+                    {{ form.visit_purpose }}
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Visit Details *</label>
+                    {{ form.visit_detail }}
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <!-- Material Details -->
+            <h6 class="fw-bold text-primary mb-3">Material Details</h6>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Material</label>
+                    {{ form.material }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Material Category</label>
+                    <div class="d-flex gap-4 flex-wrap mt-1">
+                      {% for radio in form.material_category %}
+                        <label class="form-check form-check-inline m-0">
+                          {{ radio.tag }}
+                          <span class="ms-1">{{ radio.choice_label }}</span>
+                        </label>
+                      {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">No. of Visitors</label>
+                    {{ form.no_of_visitors }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Vehicle Number</label>
+                    {{ form.vehicle_number }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Access Card No.</label>
+                    {{ form.access_card_no }}
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Items Carried</label>
+                    {{ form.items_carried }}
+                </div>
+            </div>
+
+            <!-- Info Alert -->
+            <div class="alert alert-info mt-4 mb-3">
+                <i class="bi bi-info-circle me-2"></i>
+                The contact person will be notified via email for approval.
+            </div>
+
+            <div class="card border-0 mb-3" style="background:#f8fafc;">
+                <div class="card-body py-3">
+                    <h6 class="fw-bold mb-2"><i class="bi bi-diagram-3 me-2"></i>VGP Full Workflow</h6>
+                    <ol class="mb-0 ps-3" style="font-size:13px; color:#4a5568; line-height:1.7;">
+                        {% for step in workflow_steps %}
+                        <li>{{ step }}</li>
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success px-4">
+                    <i class="bi bi-send me-2"></i>Create Visitor Pass
+                </button>
+                <a href="{% url 'visitor_pass:pass_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function pad(n){ return String(n).padStart(2,'0'); }
+function nowDate(){ const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function nowTime(){ const d=new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+
+document.querySelectorAll('.now-cb').forEach(cb => {
+    cb.addEventListener('change', function(){
+        const el = document.getElementById(this.dataset.target);
+        if(this.checked){
+            el.value = this.dataset.type === 'date' ? nowDate() : nowTime();
+            el.readOnly = true;
+        } else {
+            el.readOnly = false;
+        }
+    });
+});
+
+function getInvalidFieldLabel(field) {
+    const formLabel = field.closest('.col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-6, .col-md-12, .col-12, .mb-3')?.querySelector('.form-label');
+    return formLabel ? formLabel.textContent.replace('*', '').trim() : (field.name || 'required field');
+}
+
+document.getElementById('vgp-pass-form').addEventListener('submit', function (e) {
+    if (this.checkValidity()) return;
+    e.preventDefault();
+    const invalidField = this.querySelector(':invalid');
+    if (!invalidField) return;
+    alert(`Please fill the mandatory field: ${getInvalidFieldLabel(invalidField)}.`);
+    if (typeof invalidField.reportValidity === 'function') invalidField.reportValidity();
+    invalidField.focus();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block title %}IT Help Desk{% endblock %}
+{% block page_title %}IT Help Desk{% endblock %}
+
+{% block extra_css %}
+<style>
+.ticket-stat { border-radius:14px;padding:20px;color:white;position:relative;overflow:hidden; }
+.ticket-stat::after{content:'';position:absolute;right:-15px;top:-15px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.1);}
+.ticket-stat .ts-icon{width:44px;height:44px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:10px;}
+.ticket-stat .ts-val{font-size:30px;font-weight:700;line-height:1;}
+.ticket-stat .ts-lbl{font-size:11px;opacity:.85;margin-top:3px;}
+.priority-critical{background:#f8d7da;color:#842029;border-left:4px solid #dc3545;}
+.priority-high{background:#fff3cd;color:#856404;border-left:4px solid #ffc107;}
+.priority-medium{background:#d1e7dd;color:#0f5132;border-left:4px solid #198754;}
+.priority-low{background:#e2e3e5;color:#383d41;border-left:4px solid #6c757d;}
+.status-open{background:#cfe2ff;color:#084298;}
+.status-in_progress{background:#fff3cd;color:#856404;}
+.status-on_hold{background:#e2e3e5;color:#383d41;}
+.status-resolved{background:#d1e7dd;color:#0f5132;}
+.status-closed{background:#f8f9fa;color:#6c757d;}
+.badge-status,.badge-priority{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:600;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-headset me-2"></i>IT Help Desk</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Help Desk</li>
+        </ol></nav>
+    </div>
+    <a href="{% url 'helpdesk:ticket_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>Raise New Ticket
+    </a>
+</div>
+
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-2">
+        <div class="ticket-stat" style="background:linear-gradient(135deg,#2A2A86,#3C3CA0);">
+            <div class="ts-icon"><i class="bi bi-ticket-detailed"></i></div>
+            <div class="ts-val">{{ total }}</div>
+            <div class="ts-lbl">Total Tickets</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="ticket-stat" style="background:linear-gradient(135deg,#0e6655,#1abc9c);">
+            <div class="ts-icon"><i class="bi bi-folder2-open"></i></div>
+            <div class="ts-val">{{ open }}</div>
+            <div class="ts-lbl">Open</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="ticket-stat" style="background:linear-gradient(135deg,#f0a500,#e67e22);">
+            <div class="ts-icon"><i class="bi bi-arrow-repeat"></i></div>
+            <div class="ts-val">{{ in_progress }}</div>
+            <div class="ts-lbl">In Progress</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="ticket-stat" style="background:linear-gradient(135deg,#6c3483,#9b59b6);">
+            <div class="ts-icon"><i class="bi bi-pause-circle"></i></div>
+            <div class="ts-val">{{ on_hold }}</div>
+            <div class="ts-lbl">On Hold</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="ticket-stat" style="background:linear-gradient(135deg,#27ae60,#2ecc71);">
+            <div class="ts-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="ts-val">{{ resolved }}</div>
+            <div class="ts-lbl">Resolved</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="ticket-stat" style="background:linear-gradient(135deg,#c0392b,#e74c3c);">
+            <div class="ts-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="ts-val">{{ critical }}</div>
+            <div class="ts-lbl">Critical Open</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Recent Tickets -->
+    <div class="col-lg-{% if is_it %}8{% else %}12{% endif %}">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clock-history me-2"></i>Recent Tickets</span>
+                <a href="{% url 'helpdesk:ticket_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead><tr>
+                            <th>Ticket No</th><th>Title</th><th>Category</th>
+                            <th>Priority</th><th>Status</th>
+                            {% if is_it %}<th>Raised By</th><th>Assigned</th>{% endif %}
+                            <th>Date</th>
+                        </tr></thead>
+                        <tbody>
+                        {% for t in recent %}
+                        <tr>
+                            <td><a href="{% url 'helpdesk:ticket_detail' t.pk %}" class="fw-semibold text-decoration-none text-primary">{{ t.ticket_number }}</a></td>
+                            <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ t.title }}</td>
+                            <td><small>{{ t.get_category_display }}</small></td>
+                            <td><span class="badge-priority priority-{{ t.priority }}">{{ t.get_priority_display }}</span></td>
+                            <td><span class="badge-status status-{{ t.status }}">{{ t.get_status_display }}</span></td>
+                            {% if is_it %}
+                            <td>{{ t.raised_by.employee_name }}</td>
+                            <td>{{ t.assigned_to.employee_name|default:'—' }}</td>
+                            {% endif %}
+                            <td><small>{{ t.created_at|date:"d M Y" }}</small></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" class="text-center text-muted py-4">No tickets yet.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if is_it %}
+    <!-- IT Panel -->
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-bar-chart me-2"></i>By Category</div>
+            <div class="card-body p-0">
+                {% for item in by_category %}
+                <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                    <span style="font-size:13px;">{{ item.category|title }}</span>
+                    <span class="badge" style="background:#2A2A86;color:white;">{{ item.count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="bi bi-people me-2"></i>IT Queue</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2" style="font-size:13px;">
+                    <span>Unassigned Open Tickets</span>
+                    <span class="badge bg-danger">{{ unassigned }}</span>
+                </div>
+                <div class="d-flex justify-content-between" style="font-size:13px;">
+                    <span>My Active Tickets</span>
+                    <span class="badge bg-primary">{{ my_assigned }}</span>
+                </div>
+                <a href="{% url 'helpdesk:ticket_list' %}?status=open" class="btn btn-sm btn-outline-danger w-100 mt-3">
+                    <i class="bi bi-exclamation-circle me-1"></i>View Open Tickets
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

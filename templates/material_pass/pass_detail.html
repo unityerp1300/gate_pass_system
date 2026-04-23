@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}{{ gp.pass_number }}{% endblock %}
+{% block page_title %}Material Gate Pass Detail{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-box-seam me-2"></i>{{ gp.pass_number }}</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'material_pass:pass_list' %}">Material Gate Pass</a></li>
+            <li class="breadcrumb-item active">{{ gp.pass_number }}</li>
+        </ol></nav>
+    </div>
+    <div class="d-flex gap-2">
+        {% if gp.status == 'approved' or gp.status == 'returned' %}
+        <a href="{% url 'material_pass:print_pass' gp.pk %}" class="btn btn-outline-dark btn-sm" target="_blank">
+        {% if can_edit %}
+        <a href="{% url 'material_pass:pass_edit' gp.pk %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-pencil me-1"></i>Edit
+        </a>
+        {% endif %}
+            <i class="bi bi-printer me-1"></i>Print
+        </a>
+        {% endif %}
+        {% if can_approve %}
+        <a href="{% url 'material_pass:pass_approve' gp.pk %}" class="btn btn-success btn-sm">
+            <i class="bi bi-check-circle me-1"></i>Approve / Reject
+        </a>
+        {% endif %}
+        {% if gp.status == 'approved' and gp.is_returnable %}
+        {% if request.user.role == 'security' or request.user.is_superuser %}
+        <a href="{% url 'material_pass:mark_returned' gp.pk %}" class="btn btn-outline-info btn-sm">
+            <i class="bi bi-arrow-return-left me-1"></i>Mark Returned
+        </a>
+        {% endif %}
+        {% endif %}
+        <a href="{% url 'material_pass:pass_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                Pass Information
+                <span class="badge badge-{{ gp.status }} px-3 py-2 rounded-pill fs-6">{{ gp.get_status_display }}</span>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><th style="width:40%">Pass Number</th><td><strong>{{ gp.pass_number }}</strong></td></tr>
+                    <tr><th>Employee</th><td>{{ gp.employee.employee_name }} ({{ gp.employee.employee_code }})</td></tr>
+                    <tr><th>Department</th><td>{{ gp.employee.department }}</td></tr>
+                    <tr><th>Direction</th><td>{{ gp.get_direction_display }}</td></tr>
+                    <tr><th>Material Type</th><td>{{ gp.get_material_type_display }}</td></tr>
+                    <tr><th>Party / Vendor</th><td>{{ gp.party_name }}</td></tr>
+                    <tr><th>Vehicle Number</th><td>{{ gp.vehicle_number|default:'-' }}</td></tr>
+                    <tr><th>Date</th><td>{{ gp.pass_date }}</td></tr>
+                    <tr><th>Time</th><td>{{ gp.pass_time }}</td></tr>
+                    <tr><th>Expected Return</th><td>{{ gp.expected_return_date|default:'-' }}</td></tr>
+                    <tr><th>Actual Return</th><td>{{ gp.actual_return_date|default:'-' }}</td></tr>
+                    <tr><th>Remarks</th><td>{{ gp.remarks|default:'-' }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card mb-3">
+            <div class="card-header">Material Items</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th><th>Serial No.</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for item in gp.items.all %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ item.description }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.unit }}</td>
+                        <td>{{ item.serial_number|default:'-' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted">No items.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if gp.approver %}
+        <div class="card">
+            <div class="card-header">Approval Info</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><th>Approved By</th><td>{{ gp.approver.employee_name }}</td></tr>
+                    <tr><th>Approved At</th><td>{{ gp.approved_at }}</td></tr>
+                    <tr><th>Remarks</th><td>{{ gp.approval_remarks|default:'-' }}</td></tr>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

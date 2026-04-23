@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Review {{ mr.request_number }}{% endblock %}
+{% block page_title %}Store Review — {{ mr.request_number }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-clipboard-check me-2"></i>Store Review</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'material_pass:request_list' %}">Material Gate Pass Requests</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'material_pass:request_detail' mr.pk %}">{{ mr.request_number }}</a></li>
+            <li class="breadcrumb-item active">Review</li>
+        </ol></nav>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-7">
+        <!-- Request Summary -->
+        <div class="card mb-3">
+            <div class="card-header fw-semibold">Request Summary</div>
+            <div class="card-body" style="font-size:13px;">
+                <div class="row g-2">
+                    <div class="col-6"><span class="text-muted">Request No</span><div class="fw-semibold">{{ mr.request_number }}</div></div>
+                    <div class="col-6"><span class="text-muted">Department</span><div>{{ mr.department }}</div></div>
+                    <div class="col-6"><span class="text-muted">Requested By</span><div>{{ mr.employee.employee_name }}</div></div>
+                    <div class="col-6"><span class="text-muted">Request Date</span><div>{{ mr.request_date }}</div></div>
+                    <div class="col-6"><span class="text-muted">Required By</span><div>{{ mr.expected_date|default:"-" }}</div></div>
+                    <div class="col-6"><span class="text-muted">Type</span>
+                        <div><span class="badge {% if mr.is_returnable %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                            {% if mr.is_returnable %}Returnable{% else %}Non-Returnable{% endif %}
+                        </span></div>
+                    </div>
+                    <div class="col-12"><span class="text-muted">Reason</span><div>{{ mr.reason }}</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items -->
+        <div class="card">
+            <div class="card-header fw-semibold">Requested Items</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th><th>HSN</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for item in mr.items.all %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ item.description }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.unit }}</td>
+                        <td>{{ item.hsn_code|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header fw-semibold"><i class="bi bi-shop me-2"></i>Store Decision</div>
+            <div class="card-body">
+                <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Action *</label>
+                    <div class="d-flex gap-4">
+                        {% for radio in form.action %}
+                        <div class="form-check">
+                            {{ radio.tag }}
+                            <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Store Remarks</label>
+                    {{ form.review_remarks }}
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Submit Decision</button>
+                    <a href="{% url 'material_pass:request_detail' mr.pk %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

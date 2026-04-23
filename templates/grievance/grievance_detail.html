@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}{{ grv.grievance_no }}{% endblock %}
+{% block page_title %}Grievance Detail{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h4><i class="bi bi-megaphone me-2"></i>{{ grv.grievance_no }}</h4>
+    <a href="{% url 'grievance:list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="row g-3">
+    <!-- Left: Details -->
+    <div class="col-lg-8">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>{{ grv.subject }}</span>
+                <span class="badge {% if grv.status == 'open' %}badge-pending{% elif grv.status == 'under_review' %}bg-info text-dark{% elif grv.status == 'resolved' %}badge-approved{% else %}bg-secondary{% endif %}">
+                    {{ grv.get_status_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-md-4"><small class="text-muted">Raised By</small><div class="fw-semibold">{{ grv.raised_by.employee_name }}</div></div>
+                    <div class="col-md-4"><small class="text-muted">Department</small><div class="fw-semibold">{{ grv.raised_by.department }}</div></div>
+                    <div class="col-md-4"><small class="text-muted">Date</small><div class="fw-semibold">{{ grv.created_at|date:"d M Y, H:i" }}</div></div>
+                    <div class="col-md-4"><small class="text-muted">Category</small><div class="fw-semibold">{{ grv.get_category_display }}</div></div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Priority</small>
+                        <div>
+                            <span class="badge {% if grv.priority == 'critical' %}bg-danger{% elif grv.priority == 'high' %}bg-warning text-dark{% elif grv.priority == 'medium' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+                                {{ grv.get_priority_display }}
+                            </span>
+                        </div>
+                    </div>
+                    {% if grv.assigned_to %}
+                    <div class="col-md-4"><small class="text-muted">Assigned To</small><div class="fw-semibold">{{ grv.assigned_to.employee_name }}</div></div>
+                    {% endif %}
+                </div>
+
+                <!-- Directed To -->
+                <div class="mb-3">
+                    <small class="text-muted d-block mb-1">Complaint Directed To</small>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% if grv.notify_management %}<span class="badge bg-primary"><i class="bi bi-briefcase-fill me-1"></i>Management</span>{% endif %}
+                        {% if grv.notify_president %}<span class="badge bg-success"><i class="bi bi-building-fill me-1"></i>President / Plant Head</span>{% endif %}
+                        {% if grv.notify_hod %}<span class="badge bg-warning text-dark"><i class="bi bi-person-badge-fill me-1"></i>Department HOD</span>{% endif %}
+                        {% if grv.notify_hr %}<span class="badge bg-danger"><i class="bi bi-people-fill me-1"></i>HR</span>{% endif %}
+                    </div>
+                </div>
+
+                <hr>
+                <p style="white-space:pre-wrap;">{{ grv.description }}</p>
+
+                {% if grv.attachment %}
+                <a href="{{ grv.attachment.url }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-paperclip me-1"></i>View Attachment</a>
+                {% endif %}
+
+                {% if grv.resolution_note %}
+                <div class="alert alert-success mt-3">
+                    <strong><i class="bi bi-check-circle me-1"></i>Resolution Note:</strong><br>
+                    {{ grv.resolution_note }}
+                    {% if grv.resolved_at %}<br><small class="text-muted">Resolved on {{ grv.resolved_at|date:"d M Y, H:i" }}</small>{% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Comments -->
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-chat-dots me-2"></i>Comments ({{ comments|length }})</div>
+            <div class="card-body">
+                {% for c in comments %}
+                <div class="d-flex gap-2 mb-3">
+                    <div class="user-avatar flex-shrink-0" style="width:32px;height:32px;font-size:12px;">{{ c.author.employee_name|first|upper }}</div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between">
+                            <strong style="font-size:13px;">{{ c.author.employee_name }}</strong>
+                            <small class="text-muted">{{ c.created_at|date:"d M Y, H:i" }}</small>
+                        </div>
+                        <p class="mb-0" style="font-size:13.5px;white-space:pre-wrap;">{{ c.comment }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center">No comments yet.</p>
+                {% endfor %}
+
+                <hr>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="comment">
+                    {{ comment_form.comment }}
+                    <button type="submit" class="btn btn-primary btn-sm mt-2"><i class="bi bi-send me-1"></i>Add Comment</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Management Panel -->
+    {% if can_manage and update_form %}
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-sliders me-2"></i>Manage Grievance</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update">
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        {{ update_form.status }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Assign To</label>
+                        {{ update_form.assigned_to }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Resolution Note</label>
+                        {{ update_form.resolution_note }}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save me-1"></i>Update</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

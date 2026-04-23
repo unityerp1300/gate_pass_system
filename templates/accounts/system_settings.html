@@ -1,0 +1,1566 @@
+{% extends 'base.html' %}
+{% load dict_extras %}
+{% block title %}System Settings{% endblock %}
+{% block page_title %}System Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+.perm-matrix th, .perm-matrix td { text-align:center; vertical-align:middle; padding:7px 8px; font-size:12px; }
+.perm-matrix th:first-child, .perm-matrix td:first-child { text-align:left; min-width:140px; font-weight:600; }
+.perm-matrix thead th { background:#2A2A86; color:white; font-size:11px; text-transform:uppercase; }
+.perm-matrix .mod-hdr td { background:#e8f0fe; color:#2A2A86; font-weight:700; font-size:11px; text-transform:uppercase; }
+.perm-matrix tbody tr:nth-child(even):not(.mod-hdr) { background:#f8f9fa; }
+.perm-check { width:16px; height:16px; accent-color:#2A2A86; cursor:pointer; }
+.bypass-check { accent-color:#e67e22; }
+.nav-tabs .nav-link { font-size:13px; font-weight:500; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-gear-fill me-2"></i>System Settings</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Settings</li>
+        </ol></nav>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-4" id="settingsTabs">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-series"><i class="bi bi-123 me-1"></i>Pass Series</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-db-reset"><i class="bi bi-trash3 me-1"></i>Database Reset</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-session"><i class="bi bi-clock-history me-1"></i>Session</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-inauguration"><i class="bi bi-stars me-1"></i>Inauguration Page</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-maintenance"><i class="bi bi-tools me-1"></i>Maintenance</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-smtp"><i class="bi bi-envelope-gear me-1"></i>SMTP Mail</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-roles"><i class="bi bi-shield-check me-1"></i>Role Permissions</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-workflows"><i class="bi bi-diagram-3 me-1"></i>Workflows</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-print-format"><i class="bi bi-printer me-1"></i>Print Format</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-backup"><i class="bi bi-cloud-arrow-down me-1"></i>Backup &amp; Restore</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-info"><i class="bi bi-info-circle me-1"></i>System Info</a></li>
+</ul>
+
+<div class="tab-content">
+
+<!-- Tab: Pass Series -->
+<div class="tab-pane fade show active" id="tab-series">
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-person-walking text-primary"></i>
+                Internal Gate Pass Series
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#e8f0fe;">
+                            <div class="text-muted small">Current Prefix</div>
+                            <div class="fw-bold fs-4 text-primary">{{ setting.igp_prefix }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#e8f0fe;">
+                            <div class="text-muted small">Next Number</div>
+                            <div class="fw-bold fs-4 text-primary">{{ setting.igp_prefix }}-{{ setting.igp_next_number|stringformat:"05d" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#f8f9fa;">
+                            <div class="text-muted small">Total Passes</div>
+                            <div class="fw-bold fs-5">{{ igp_total }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#f8f9fa;">
+                            <div class="text-muted small">Last Pass</div>
+                            <div class="fw-bold fs-6">{{ igp_last.pass_number|default:'—' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update Prefix -->
+                <form method="post" class="mb-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_series">
+                    <label class="form-label">Change IGP Prefix</label>
+                    <div class="input-group">
+                        <input type="text" name="igp_prefix" class="form-control text-uppercase"
+                               value="{{ setting.igp_prefix }}" maxlength="10" placeholder="e.g. IGP"
+                               style="text-transform:uppercase">
+                        <input type="hidden" name="vgp_prefix" value="{{ setting.vgp_prefix }}">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>Save Prefix
+                        </button>
+                    </div>
+                    <small class="text-muted">Next pass will be: <strong id="igp_preview">{{ setting.igp_prefix }}-{{ setting.igp_next_number|stringformat:"05d" }}</strong></small>
+                </form>
+
+                <!-- Reset Series -->
+                <form method="post" onsubmit="return confirm('Reset IGP series? This cannot be undone.')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reset_igp">
+                    <label class="form-label text-danger">Reset IGP Number To</label>
+                    <div class="input-group">
+                        <input type="number" name="igp_reset_number" class="form-control" value="1" min="1">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                        </button>
+                    </div>
+                    <small class="text-muted text-danger">⚠ Use with caution — resets the numbering sequence.</small>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- VGP Series Card -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-person-badge-fill text-success"></i>
+                Visitor Gate Pass Series
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#d1e7dd;">
+                            <div class="text-muted small">Current Prefix</div>
+                            <div class="fw-bold fs-4 text-success">{{ setting.vgp_prefix }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#d1e7dd;">
+                            <div class="text-muted small">Next Number</div>
+                            <div class="fw-bold fs-4 text-success">{{ setting.vgp_prefix }}-{{ setting.vgp_next_number|stringformat:"05d" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#f8f9fa;">
+                            <div class="text-muted small">Total Passes</div>
+                            <div class="fw-bold fs-5">{{ vgp_total }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#f8f9fa;">
+                            <div class="text-muted small">Last Pass</div>
+                            <div class="fw-bold fs-6">{{ vgp_last.pass_number|default:'—' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update Prefix -->
+                <form method="post" class="mb-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_series">
+                    <input type="hidden" name="igp_prefix" value="{{ setting.igp_prefix }}">
+                    <label class="form-label">Change VGP Prefix</label>
+                    <div class="input-group">
+                        <input type="text" name="vgp_prefix" class="form-control text-uppercase"
+                               value="{{ setting.vgp_prefix }}" maxlength="10" placeholder="e.g. VGP"
+                               style="text-transform:uppercase">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-lg me-1"></i>Save Prefix
+                        </button>
+                    </div>
+                    <small class="text-muted">Next pass will be: <strong>{{ setting.vgp_prefix }}-{{ setting.vgp_next_number|stringformat:"05d" }}</strong></small>
+                </form>
+
+                <!-- Reset Series -->
+                <form method="post" onsubmit="return confirm('Reset VGP series? This cannot be undone.')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reset_vgp">
+                    <label class="form-label text-danger">Reset VGP Number To</label>
+                    <div class="input-group">
+                        <input type="number" name="vgp_reset_number" class="form-control" value="1" min="1">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                        </button>
+                    </div>
+                    <small class="text-muted text-danger">⚠ Use with caution — resets the numbering sequence.</small>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- IT Help Desk Ticket Series -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-headset text-warning"></i>
+                IT Help Desk Ticket Series
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#fff3cd;">
+                            <div class="text-muted small">Current Prefix</div>
+                            <div class="fw-bold fs-4" style="color:#856404;">{{ setting.tkt_prefix }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#fff3cd;">
+                            <div class="text-muted small">Next Number</div>
+                            <div class="fw-bold fs-4" style="color:#856404;">{{ setting.tkt_prefix }}-{{ setting.tkt_next_number|stringformat:"05d" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#f8f9fa;">
+                            <div class="text-muted small">Total Tickets</div>
+                            <div class="fw-bold fs-5">{{ tkt_total }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#f8f9fa;">
+                            <div class="text-muted small">Last Ticket</div>
+                            <div class="fw-bold fs-6">{{ tkt_last.ticket_number|default:'&mdash;' }}</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Update Prefix -->
+                <form method="post" class="mb-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_series">
+                    <input type="hidden" name="igp_prefix" value="{{ setting.igp_prefix }}">
+                    <input type="hidden" name="vgp_prefix" value="{{ setting.vgp_prefix }}">
+                    <label class="form-label">Change Ticket Prefix</label>
+                    <div class="input-group">
+                        <input type="text" name="tkt_prefix" class="form-control text-uppercase"
+                               value="{{ setting.tkt_prefix }}" maxlength="10" placeholder="e.g. TKT"
+                               style="text-transform:uppercase">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-check-lg me-1"></i>Save Prefix
+                        </button>
+                    </div>
+                    <small class="text-muted">Next ticket will be: <strong>{{ setting.tkt_prefix }}-{{ setting.tkt_next_number|stringformat:"05d" }}</strong></small>
+                </form>
+                <!-- Reset Counter -->
+                <form method="post" onsubmit="return confirm('Reset Ticket series? This cannot be undone.')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reset_tkt">
+                    <label class="form-label text-danger">Reset Ticket Number To</label>
+                    <div class="input-group">
+                        <input type="number" name="tkt_reset_number" class="form-control" value="1" min="1">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                        </button>
+                    </div>
+                    <small class="text-muted text-danger">⚠ Use with caution &mdash; resets the numbering sequence.</small>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MGP Series Card -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-box-seam text-danger"></i>
+                Material Gate Pass Series
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#f8d7da;">
+                            <div class="text-muted small">Current Prefix</div>
+                            <div class="fw-bold fs-4 text-danger">{{ setting.mgp_prefix }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#f8d7da;">
+                            <div class="text-muted small">Next Number</div>
+                            <div class="fw-bold fs-4 text-danger">{{ setting.mgp_prefix }}-{{ setting.mgp_next_number|stringformat:"05d" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#f8f9fa;">
+                            <div class="text-muted small">Total Passes</div>
+                            <div class="fw-bold fs-5">{{ mgp_total }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#f8f9fa;">
+                            <div class="text-muted small">Last Pass</div>
+                            <div class="fw-bold fs-6">{{ mgp_last.pass_number|default:'—' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update Prefix -->
+                <form method="post" class="mb-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_series">
+                    <input type="hidden" name="igp_prefix" value="{{ setting.igp_prefix }}">
+                    <input type="hidden" name="vgp_prefix" value="{{ setting.vgp_prefix }}">
+                    <input type="hidden" name="tkt_prefix" value="{{ setting.tkt_prefix }}">
+                    <label class="form-label">Change MGP Prefix</label>
+                    <div class="input-group">
+                        <input type="text" name="mgp_prefix" class="form-control text-uppercase"
+                               value="{{ setting.mgp_prefix }}" maxlength="10" placeholder="e.g. MGP"
+                               style="text-transform:uppercase">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-check-lg me-1"></i>Save Prefix
+                        </button>
+                    </div>
+                    <small class="text-muted">Next pass will be: <strong>{{ setting.mgp_prefix }}-{{ setting.mgp_next_number|stringformat:"05d" }}</strong></small>
+                </form>
+
+                <!-- Reset Series -->
+                <form method="post" onsubmit="return confirm('Reset MGP series? This cannot be undone.')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reset_mgp">
+                    <label class="form-label text-danger">Reset MGP Number To</label>
+                    <div class="input-group">
+                        <input type="number" name="mgp_reset_number" class="form-control" value="1" min="1">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                        </button>
+                    </div>
+                    <small class="text-muted text-danger">⚠ Use with caution — resets the numbering sequence.</small>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Info -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-info-circle me-2"></i>System Information</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3 col-6">
+                        <div class="text-muted small">Last Settings Update</div>
+                        <div class="fw-semibold">{{ setting.updated_at|date:"d M Y, H:i" }}</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="text-muted small">Server Base URL</div>
+                        <div class="fw-semibold" style="font-size:13px;">{{ request.scheme }}://{{ request.get_host }}</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="text-muted small">Total IGP Passes</div>
+                        <div class="fw-semibold">{{ igp_total }}</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="text-muted small">Total VGP Passes</div>
+                        <div class="fw-semibold">{{ vgp_total }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+</div> <!-- end tab-series -->
+
+<!-- Tab: Session -->
+<div class="tab-pane fade" id="tab-session">
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-clock-history text-primary fs-5"></i>
+                <span class="fw-bold">Session Timeout</span>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info border-0" style="font-size:13px;">
+                    <i class="bi bi-info-circle me-2"></i>
+                    This setting applies to <strong>all roles</strong>. Users will be logged out after the configured minutes of inactivity.
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_session">
+                    <label class="form-label fw-semibold">Session Timeout (minutes)</label>
+                    <div class="input-group" style="max-width:320px;">
+                        <button class="btn btn-outline-secondary" type="button"
+                                onclick="adjustSession(-5)">-5</button>
+                        <button class="btn btn-outline-secondary" type="button"
+                                onclick="adjustSession(-1)">-1</button>
+                        <input type="number" class="form-control text-center" min="1" max="1440"
+                               name="session_timeout_minutes" id="sessionTimeout"
+                               value="{{ setting.session_timeout_minutes }}">
+                        <button class="btn btn-outline-secondary" type="button"
+                                onclick="adjustSession(1)">+1</button>
+                        <button class="btn btn-outline-secondary" type="button"
+                                onclick="adjustSession(5)">+5</button>
+                    </div>
+                    <small class="text-muted d-block mt-2">Recommended: 20–60 minutes.</small>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Save Session Setting
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-shield-lock me-2"></i>Notes</div>
+            <div class="card-body" style="font-size:13px;color:#4a5568;line-height:1.7;">
+                <ul class="mb-0">
+                    <li>Timeout is based on inactivity (no requests).</li>
+                    <li>Applies to web pages and AJAX calls.</li>
+                    <li>Single-login enforcement remains enabled.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+</div> <!-- end tab-session -->
+
+<!-- Tab: Inauguration Page -->
+<div class="tab-pane fade" id="tab-inauguration">
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-stars text-warning fs-5"></i>
+                <span class="fw-bold">Inauguration / Welcome Page</span>
+                {% if setting.welcome_enabled %}
+                <span class="badge bg-success ms-auto"><i class="bi bi-circle-fill me-1" style="font-size:8px;"></i>ENABLED</span>
+                {% else %}
+                <span class="badge bg-secondary ms-auto"><i class="bi bi-circle-fill me-1" style="font-size:8px;"></i>DISABLED</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info border-0" style="font-size:13px;">
+                    <i class="bi bi-info-circle me-2"></i>
+                    When enabled, users will be redirected to the inauguration page <strong>once per user</strong>.
+                    To show it again to everyone, tick <strong>Increase Version</strong> and save.
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_inauguration">
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="welcome_enabled" id="welcomeEnabled"
+                                   role="switch" style="width:3em;height:1.5em;cursor:pointer;"
+                                   {% if setting.welcome_enabled %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold ms-2" for="welcomeEnabled">
+                                Enable Inauguration Page
+                            </label>
+                        </div>
+                        <small class="text-muted">URL: <code>/accounts/inauguration/</code></small>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Title</label>
+                            <input type="text" class="form-control" name="welcome_title" maxlength="120"
+                                   value="{{ setting.welcome_title }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Current Version</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control text-center" value="{{ setting.welcome_version }}" readonly>
+                                <span class="input-group-text"><i class="bi bi-hash"></i></span>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" name="bump_version" id="bumpVersion">
+                                <label class="form-check-label" for="bumpVersion">Increase Version (show again to all)</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold"><i class="bi bi-people-fill me-1"></i>Message from Management Team</label>
+                            <textarea class="form-control" rows="6" name="welcome_message_management"
+                                      placeholder="Brief message from entire Management Team...">{{ setting.welcome_message_management }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold"><i class="bi bi-award-fill me-1"></i>Message from President</label>
+                            <textarea class="form-control" rows="6" name="welcome_message_president"
+                                      placeholder="Brief message from President-Plant Head...">{{ setting.welcome_message_president }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 d-flex gap-2 flex-wrap">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Save Inauguration Settings
+                        </button>
+                        <a class="btn btn-outline-secondary" href="{% url 'accounts:inauguration_page' %}" target="_blank">
+                            <i class="bi bi-box-arrow-up-right me-2"></i>Preview Page
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-eye me-2"></i>Quick Preview</div>
+            <div class="card-body" style="background:#f0f4f8;border-radius:8px;">
+                <div class="p-3 rounded-4" style="background:white; border:1px solid #e2e8f0;">
+                    <div class="fw-bold" style="color:#2A2A86;">{{ setting.welcome_title|default:"Welcome" }}</div>
+                    <div class="text-muted small mb-2">v{{ setting.welcome_version }}</div>
+                    <div class="small" style="color:#4a5568; white-space:pre-wrap; line-height:1.6;">{{ setting.welcome_message_management|default:"" }}</div>
+                    <hr>
+                    <div class="small" style="color:#4a5568; white-space:pre-wrap; line-height:1.6;">{{ setting.welcome_message_president|default:"" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div> <!-- end tab-inauguration -->
+
+<!-- Tab: Database Reset -->
+<div class="tab-pane fade" id="tab-db-reset">
+<div class="alert alert-danger border-0 mb-4" style="font-size:13px;background:#fff5f5;border-left:4px solid #dc3545!important;">
+    <i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>
+    <strong>Danger Zone.</strong> These actions permanently delete all pass records and reset the numbering series. This <strong>cannot be undone</strong>. Type the confirmation text exactly to proceed.
+</div>
+<div class="row g-4">
+    <!-- IGP Reset -->
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header d-flex align-items-center gap-2" style="background:#fff5f5;border-bottom:1px solid #f5c6cb;">
+                <i class="bi bi-person-walking text-danger fs-5"></i>
+                <span class="fw-bold text-danger">Reset IGP Database</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-4">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#fff5f5;">
+                            <div class="text-muted small">Total IGP Records</div>
+                            <div class="fw-bold fs-3 text-danger">{{ igp_total }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#fff5f5;">
+                            <div class="text-muted small">Last Pass No.</div>
+                            <div class="fw-bold fs-6">{{ igp_last.pass_number|default:'—' }}</div>
+                        </div>
+                    </div>
+                </div>
+                <form method="post" onsubmit="return confirmDbReset(this, 'DELETE IGP', 'ALL {{ igp_total }} IGP records')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reset_db_igp">
+                    <label class="form-label fw-semibold">Type <code>DELETE IGP</code> to confirm</label>
+                    <input type="text" name="confirm_text" class="form-control mb-3"
+                           placeholder="DELETE IGP" autocomplete="off" required>
+                    <button type="submit" class="btn btn-danger w-100">
+                        <i class="bi bi-trash3 me-2"></i>Delete All IGP Records & Reset Series
+                    </button>
+                </form>
+                <small class="text-muted d-block mt-2">This will delete all IGP passes and reset the counter to {{ setting.igp_prefix }}-00001.</small>
+            </div>
+        </div>
+    </div>
+    <!-- VGP Reset -->
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header d-flex align-items-center gap-2" style="background:#fff5f5;border-bottom:1px solid #f5c6cb;">
+                <i class="bi bi-person-badge-fill text-danger fs-5"></i>
+                <span class="fw-bold text-danger">Reset VGP Database</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-4">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#fff5f5;">
+                            <div class="text-muted small">Total VGP Records</div>
+                            <div class="fw-bold fs-3 text-danger">{{ vgp_total }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#fff5f5;">
+                            <div class="text-muted small">Last Pass No.</div>
+                            <div class="fw-bold fs-6">{{ vgp_last.pass_number|default:'&mdash;' }}</div>
+                        </div>
+                    </div>
+                </div>
+                <form method="post" onsubmit="return confirmDbReset(this, 'DELETE VGP', 'ALL {{ vgp_total }} VGP records')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reset_db_vgp">
+                    <label class="form-label fw-semibold">Type <code>DELETE VGP</code> to confirm</label>
+                    <input type="text" name="confirm_text" class="form-control mb-3"
+                           placeholder="DELETE VGP" autocomplete="off" required>
+                    <button type="submit" class="btn btn-danger w-100">
+                        <i class="bi bi-trash3 me-2"></i>Delete All VGP Records &amp; Reset Series
+                    </button>
+                </form>
+                <small class="text-muted d-block mt-2">This will delete all VGP passes and reset the counter to {{ setting.vgp_prefix }}-00001.</small>
+            </div>
+        </div>
+    </div>
+    <!-- HD Reset -->
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header d-flex align-items-center gap-2" style="background:#fff5f5;border-bottom:1px solid #f5c6cb;">
+                <i class="bi bi-headset text-danger fs-5"></i>
+                <span class="fw-bold text-danger">Reset Help Desk Database</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-4">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#fff5f5;">
+                            <div class="text-muted small">Total Tickets</div>
+                            <div class="fw-bold fs-3 text-danger">{{ tkt_total }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#fff5f5;">
+                            <div class="text-muted small">Last Ticket No.</div>
+                            <div class="fw-bold fs-6">{{ tkt_last.ticket_number|default:'&mdash;' }}</div>
+                        </div>
+                    </div>
+                </div>
+                <form method="post" onsubmit="return confirmDbReset(this, 'DELETE HD', 'ALL {{ tkt_total }} Help Desk tickets and comments')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reset_db_hd">
+                    <label class="form-label fw-semibold">Type <code>DELETE HD</code> to confirm</label>
+                    <input type="text" name="confirm_text" class="form-control mb-3"
+                           placeholder="DELETE HD" autocomplete="off" required>
+                    <button type="submit" class="btn btn-danger w-100">
+                        <i class="bi bi-trash3 me-2"></i>Delete All Tickets &amp; Reset Series
+                    </button>
+                </form>
+                <small class="text-muted d-block mt-2">This will delete all tickets, comments and reset the counter to {{ setting.tkt_prefix }}-00001.</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- MGP Reset -->
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header d-flex align-items-center gap-2" style="background:#fff5f5;border-bottom:1px solid #f5c6cb;">
+                <i class="bi bi-box-seam text-danger fs-5"></i>
+                <span class="fw-bold text-danger">Reset MGP Database</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-4">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#fff5f5;">
+                            <div class="text-muted small">Total MGP Records</div>
+                            <div class="fw-bold fs-3 text-danger">{{ mgp_total }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 text-center" style="background:#fff5f5;">
+                            <div class="text-muted small">Last Pass No.</div>
+                            <div class="fw-bold fs-6">{{ mgp_last.pass_number|default:'—' }}</div>
+                        </div>
+                    </div>
+                </div>
+                <form method="post" onsubmit="return confirmDbReset(this, 'DELETE MGP', 'ALL {{ mgp_total }} MGP records')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reset_db_mgp">
+                    <label class="form-label fw-semibold">Type <code>DELETE MGP</code> to confirm</label>
+                    <input type="text" name="confirm_text" class="form-control mb-3"
+                           placeholder="DELETE MGP" autocomplete="off" required>
+                    <button type="submit" class="btn btn-danger w-100">
+                        <i class="bi bi-trash3 me-2"></i>Delete All MGP Records &amp; Reset Series
+                    </button>
+                </form>
+                <small class="text-muted d-block mt-2">This will delete all Material Gate Pass records and reset the counter to {{ setting.mgp_prefix }}-00001.</small>
+            </div>
+        </div>
+    </div>
+</div>
+</div> <!-- end tab-db-reset -->
+
+<!-- Tab: Maintenance Mode -->
+<div class="tab-pane fade" id="tab-maintenance">
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-tools {% if setting.maintenance_mode %}text-warning{% else %}text-secondary{% endif %} fs-5"></i>
+                <span class="fw-bold">Maintenance Mode</span>
+                {% if setting.maintenance_mode %}
+                <span class="badge bg-warning text-dark ms-auto"><i class="bi bi-circle-fill me-1" style="font-size:8px;"></i>ACTIVE</span>
+                {% else %}
+                <span class="badge bg-success ms-auto"><i class="bi bi-circle-fill me-1" style="font-size:8px;"></i>OFF</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="alert {% if setting.maintenance_mode %}alert-warning{% else %}alert-light{% endif %} mb-4" style="font-size:13px;">
+                    {% if setting.maintenance_mode %}
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Maintenance is currently ACTIVE.</strong> All non-administrator users see the maintenance page.
+                    {% else %}
+                    <i class="bi bi-info-circle me-2"></i>
+                    Maintenance mode is <strong>OFF</strong>. The system is accessible to all users.
+                    {% endif %}
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_maintenance">
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="maintenance_mode"
+                                   id="maintenanceToggle" role="switch"
+                                   {% if setting.maintenance_mode %}checked{% endif %}
+                                   style="width:3em;height:1.5em;cursor:pointer;">
+                            <label class="form-check-label fw-semibold ms-2" for="maintenanceToggle">
+                                Enable Maintenance Mode
+                            </label>
+                        </div>
+                        <small class="text-muted">When ON, only Administrator can access the system.</small>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Maintenance Message</label>
+                        <textarea name="maintenance_message" class="form-control" rows="4"
+                                  placeholder="Message shown to users during maintenance...">{{ setting.maintenance_message }}</textarea>
+                        <small class="text-muted">This message is displayed on the maintenance page to all non-admin users.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i>Save Maintenance Settings
+                    </button>
+                    {% if setting.maintenance_mode %}
+                    <button type="submit" class="btn btn-success ms-2"
+                            onclick="document.getElementById('maintenanceToggle').checked=false;">
+                        <i class="bi bi-power me-2"></i>Turn OFF Now
+                    </button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-eye me-2"></i>Maintenance Page Preview</div>
+            <div class="card-body d-flex align-items-center justify-content-center" style="background:#f0f4f8;border-radius:8px;min-height:280px;">
+                <div class="text-center p-4">
+                    <div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,#f0a500,#e67e22);display:flex;align-items:center;justify-content:center;font-size:30px;color:white;margin:0 auto 16px;">
+                        <i class="bi bi-tools"></i>
+                    </div>
+                    <div style="font-size:18px;font-weight:700;color:#2A2A86;margin-bottom:8px;">System Under Maintenance</div>
+                    <div style="font-size:13px;color:#4a5568;line-height:1.6;">{{ setting.maintenance_message|truncatechars:120 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div> <!-- end tab-maintenance -->
+
+<!-- Tab: SMTP Mail Setup -->
+<div class="tab-pane fade" id="tab-smtp">
+<div class="row g-4">
+    <div class="col-md-7">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-envelope-gear text-primary fs-5"></i>
+                <span class="fw-bold">SMTP Mail Configuration</span>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_smtp">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">SMTP Host</label>
+                            <input type="text" name="smtp_host" class="form-control"
+                                   value="{{ setting.smtp_host }}" placeholder="smtp.gmail.com">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Port</label>
+                            <input type="number" name="smtp_port" class="form-control"
+                                   value="{{ setting.smtp_port }}" placeholder="587">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="smtp_use_tls"
+                                       id="smtpTls" {% if setting.smtp_use_tls %}checked{% endif %}
+                                       style="width:2.5em;height:1.3em;">
+                                <label class="form-check-label ms-2" for="smtpTls">Use TLS (recommended)</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">SMTP Username / Email</label>
+                            <input type="email" name="smtp_user" class="form-control"
+                                   value="{{ setting.smtp_user }}" placeholder="yourmail@gmail.com">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">SMTP Password / App Password</label>
+                            <div class="input-group">
+                                <input type="password" name="smtp_password" class="form-control"
+                                       id="smtpPwd" placeholder="Leave blank to keep current password"
+                                       autocomplete="new-password">
+                                <button type="button" class="btn btn-outline-secondary"
+                                        onclick="toggleSmtpPwd()">
+                                    <i class="bi bi-eye" id="smtpEye"></i>
+                                </button>
+                            </div>
+                            {% if setting.smtp_password %}
+                            <small class="text-success"><i class="bi bi-check-circle me-1"></i>Password is set. Leave blank to keep existing.</small>
+                            {% else %}
+                            <small class="text-muted">No password saved yet.</small>
+                            {% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">From Email (Display)</label>
+                            <input type="text" name="smtp_from" class="form-control"
+                                   value="{{ setting.smtp_from }}" placeholder="ERP System &lt;yourmail@gmail.com&gt;">
+                            <small class="text-muted">e.g. ERP System &lt;yourmail@gmail.com&gt;</small>
+                        </div>
+                        <div class="col-12 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-2"></i>Save SMTP Settings
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-send me-2"></i>Test SMTP Connection</div>
+            <div class="card-body">
+                <p style="font-size:13px;color:#4a5568;">Send a test email to your account (<strong>{{ request.user.email }}</strong>) to verify the SMTP configuration is working correctly.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="test_smtp">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-send me-2"></i>Send Test Email
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="bi bi-info-circle me-2"></i>Current SMTP Config</div>
+            <div class="card-body p-0">
+                <div class="d-flex justify-content-between px-3 py-2 border-bottom">
+                    <span style="font-size:12px;color:#718096;">Host</span>
+                    <span style="font-size:12px;font-weight:600;">{{ setting.smtp_host|default:'—' }}</span>
+                </div>
+                <div class="d-flex justify-content-between px-3 py-2 border-bottom">
+                    <span style="font-size:12px;color:#718096;">Port</span>
+                    <span style="font-size:12px;font-weight:600;">{{ setting.smtp_port }}</span>
+                </div>
+                <div class="d-flex justify-content-between px-3 py-2 border-bottom">
+                    <span style="font-size:12px;color:#718096;">TLS</span>
+                    <span style="font-size:12px;font-weight:600;">{% if setting.smtp_use_tls %}<span class="text-success">Enabled</span>{% else %}<span class="text-danger">Disabled</span>{% endif %}</span>
+                </div>
+                <div class="d-flex justify-content-between px-3 py-2 border-bottom">
+                    <span style="font-size:12px;color:#718096;">Username</span>
+                    <span style="font-size:12px;font-weight:600;">{{ setting.smtp_user|default:'—' }}</span>
+                </div>
+                <div class="d-flex justify-content-between px-3 py-2">
+                    <span style="font-size:12px;color:#718096;">Password</span>
+                    <span style="font-size:12px;font-weight:600;">{% if setting.smtp_password %}<span class="text-success"><i class="bi bi-check-circle me-1"></i>Set</span>{% else %}<span class="text-danger">Not set</span>{% endif %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div> <!-- end tab-smtp -->
+
+<!-- Tab: Role Permissions -->
+<div class="tab-pane fade" id="tab-roles">
+<div class="alert alert-info border-0 mb-3" style="font-size:13px;">
+    <i class="bi bi-info-circle me-2"></i>
+    Define default permission templates per role. Use <strong>Apply to All</strong> to push the template to every employee with that role.
+</div>
+
+{% for role_val, role_label in role_choices %}
+{% with obj=templates|get_item:role_val %}
+<div class="card mb-3">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <span class="fw-bold"><i class="bi bi-person-badge me-2"></i>{{ role_label }}</span>
+        <span class="badge bg-secondary" style="font-size:11px;">{{ role_val }}</span>
+    </div>
+    <div class="card-body p-0">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_role_template">
+            <input type="hidden" name="role" value="{{ role_val }}">
+            <div class="table-responsive">
+                <table class="table perm-matrix mb-0">
+                    <thead>
+                        <tr>
+                            <th>Module</th>
+                            <th>View</th>
+                            <th>Write</th>
+                            <th>Delete</th>
+                            <th>Approve/Reject</th>
+                            <th title="Temporary bypass when approver unavailable">Bypass</th>
+                            <th>Export</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dashboard -->
+                        <tr class="mod-hdr"><td colspan="7"><i class="bi bi-speedometer2 me-1"></i>Dashboard</td></tr>
+                        <tr>
+                            <td>Dashboard</td>
+                            <td><input type="checkbox" name="perm_dashboard_view" class="perm-check" {% if obj.perm_dashboard_view %}checked{% endif %}></td>
+                            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+                        </tr>
+                        <!-- Accounts -->
+                        <tr class="mod-hdr"><td colspan="7"><i class="bi bi-people-fill me-1"></i>Accounts</td></tr>
+                        <tr>
+                            <td>Accounts</td>
+                            <td><input type="checkbox" name="perm_accounts_view"   class="perm-check" {% if obj.perm_accounts_view   %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_accounts_write"  class="perm-check" {% if obj.perm_accounts_write  %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_accounts_delete" class="perm-check" {% if obj.perm_accounts_delete %}checked{% endif %}></td>
+                            <td>—</td><td>—</td>
+                            <td><input type="checkbox" name="perm_accounts_export" class="perm-check" {% if obj.perm_accounts_export %}checked{% endif %}></td>
+                        </tr>
+                        <!-- IGP -->
+                        <tr class="mod-hdr"><td colspan="7"><i class="bi bi-person-walking me-1"></i>Internal Gate Pass (IGP)</td></tr>
+                        <tr>
+                            <td>IGP</td>
+                            <td><input type="checkbox" name="perm_igp_view"    class="perm-check" {% if obj.perm_igp_view    %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_igp_write"   class="perm-check" {% if obj.perm_igp_write   %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_igp_delete"  class="perm-check" {% if obj.perm_igp_delete  %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_igp_approve" class="perm-check" {% if obj.perm_igp_approve %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_igp_bypass"  class="perm-check bypass-check" {% if obj.perm_igp_bypass %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_igp_export"  class="perm-check" {% if obj.perm_igp_export  %}checked{% endif %}></td>
+                        </tr>
+                        <!-- VGP -->
+                        <tr class="mod-hdr"><td colspan="7"><i class="bi bi-person-badge-fill me-1"></i>Visitor Gate Pass (VGP)</td></tr>
+                        <tr>
+                            <td>VGP</td>
+                            <td><input type="checkbox" name="perm_vgp_view"    class="perm-check" {% if obj.perm_vgp_view    %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_vgp_write"   class="perm-check" {% if obj.perm_vgp_write   %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_vgp_delete"  class="perm-check" {% if obj.perm_vgp_delete  %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_vgp_approve" class="perm-check" {% if obj.perm_vgp_approve %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_vgp_bypass"  class="perm-check bypass-check" {% if obj.perm_vgp_bypass %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_vgp_export"  class="perm-check" {% if obj.perm_vgp_export  %}checked{% endif %}></td>
+                        </tr>
+                        <!-- IT Help Desk -->
+                        <tr class="mod-hdr"><td colspan="7"><i class="bi bi-headset me-1"></i>IT Help Desk</td></tr>
+                        <tr>
+                            <td>HD View</td>
+                            <td><input type="checkbox" name="perm_helpdesk_view" class="perm-check" {% if obj.perm_helpdesk_view %}checked{% endif %}></td>
+                            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+                        </tr>
+                        <tr>
+                            <td>Raise Ticket</td>
+                            <td>—</td>
+                            <td><input type="checkbox" name="perm_hd_raise" class="perm-check" {% if obj.perm_hd_raise %}checked{% endif %}></td>
+                            <td>—</td><td>—</td><td>—</td><td>—</td>
+                        </tr>
+                        <tr>
+                            <td>HD Manage (IT)</td>
+                            <td>—</td><td>—</td>
+                            <td><input type="checkbox" name="perm_helpdesk_manage" class="perm-check" {% if obj.perm_helpdesk_manage %}checked{% endif %}></td>
+                            <td>—</td><td>—</td><td>—</td>
+                        </tr>
+                        <!-- Material Gate Pass -->
+                        <tr class="mod-hdr"><td colspan="7"><i class="bi bi-box-seam me-1"></i>Material Gate Pass (MGP)</td></tr>
+                        <tr>
+                            <td>MGP</td>
+                            <td><input type="checkbox" name="perm_mgp_view"    class="perm-check" {% if obj.perm_mgp_view    %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_mgp_write"   class="perm-check" {% if obj.perm_mgp_write   %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_mgp_delete"  class="perm-check" {% if obj.perm_mgp_delete  %}checked{% endif %}></td>
+                            <td><input type="checkbox" name="perm_mgp_approve" class="perm-check" {% if obj.perm_mgp_approve %}checked{% endif %}></td>
+                            <td>—</td>
+                            <td><input type="checkbox" name="perm_mgp_export"  class="perm-check" {% if obj.perm_mgp_export  %}checked{% endif %}></td>
+                        </tr>
+                        <tr>
+                            <td>MGP Request Raise</td>
+                            <td>—</td>
+                            <td><input type="checkbox" name="perm_mgp_request" class="perm-check" {% if obj.perm_mgp_request %}checked{% endif %}></td>
+                            <td>—</td><td>—</td><td>—</td><td>—</td>
+                        </tr>
+                        <!-- Grievance -->
+                        <tr class="mod-hdr"><td colspan="7"><i class="bi bi-megaphone-fill me-1"></i>Grievance Redressal</td></tr>
+                        <tr>
+                            <td>GRV View</td>
+                            <td><input type="checkbox" name="perm_grv_view" class="perm-check" {% if obj.perm_grv_view %}checked{% endif %}></td>
+                            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+                        </tr>
+                        <tr>
+                            <td>Raise Grievance</td>
+                            <td>—</td>
+                            <td><input type="checkbox" name="perm_grv_write" class="perm-check" {% if obj.perm_grv_write %}checked{% endif %}></td>
+                            <td>—</td><td>—</td><td>—</td><td>—</td>
+                        </tr>
+                        <tr>
+                            <td>GRV Manage</td>
+                            <td>—</td><td>—</td>
+                            <td><input type="checkbox" name="perm_grv_manage" class="perm-check" {% if obj.perm_grv_manage %}checked{% endif %}></td>
+                            <td>—</td><td>—</td><td>—</td>
+                        </tr>
+                        <!-- Reports -->
+                        <tr class="mod-hdr"><td colspan="7"><i class="bi bi-bar-chart-fill me-1"></i>Reports</td></tr>
+                        <tr>
+                            <td>IGP Report</td>
+                            <td><input type="checkbox" name="perm_reports_igp" class="perm-check" {% if obj.perm_reports_igp %}checked{% endif %}></td>
+                            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+                        </tr>
+                        <tr>
+                            <td>VGP Report</td>
+                            <td><input type="checkbox" name="perm_reports_vgp" class="perm-check" {% if obj.perm_reports_vgp %}checked{% endif %}></td>
+                            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+                        </tr>
+                        <tr>
+                            <td>MGP Report</td>
+                            <td><input type="checkbox" name="perm_reports_mgp" class="perm-check" {% if obj.perm_reports_mgp %}checked{% endif %}></td>
+                            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+                        </tr>
+                        <tr>
+                            <td>Audit Log</td>
+                            <td><input type="checkbox" name="perm_reports_audit" class="perm-check" {% if obj.perm_reports_audit %}checked{% endif %}></td>
+                            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="p-3 d-flex gap-2 flex-wrap">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-save me-1"></i>Save Template
+                </button>
+                <button type="submit" form="apply-{{ role_val }}" class="btn btn-warning btn-sm"
+                        onclick="return confirm('Apply this template to ALL {{ role_label }} employees? This will overwrite their current permissions.')">
+                    <i class="bi bi-people me-1"></i>Apply to All {{ role_label }}
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetRoleForm(this)">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                </button>
+            </div>
+        </form>
+        <form id="apply-{{ role_val }}" method="post" style="display:none">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="apply_role_template">
+            <input type="hidden" name="role" value="{{ role_val }}">
+        </form>
+    </div>
+</div>
+{% endwith %}
+{% endfor %}
+</div> <!-- end tab-roles -->
+
+<!-- Tab: Workflow Configuration -->
+<div class="tab-pane fade" id="tab-workflows">
+<div class="alert alert-info border-0 mb-3" style="font-size:13px;">
+    <i class="bi bi-info-circle me-2"></i>
+    Default approval workflows for each module. Emails are sent automatically at each stage with Approve/Reject buttons.
+</div>
+
+<!-- IGP -->
+<div class="card mb-3">
+    <div class="card-header fw-bold" style="background:linear-gradient(135deg,#1e3a5f,#1e40af);color:white;">
+        <i class="bi bi-person-walking me-2"></i>Internal Gate Pass (IGP) &mdash; 3 Workflows
+    </div>
+    <div class="card-body">
+        {% for wf_name, wf_creator, wf_stages in igp_workflows %}
+        <div class="mb-3 {% if not forloop.last %}pb-3 border-bottom{% endif %}">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge bg-primary">{{ wf_name }}</span>
+                <small class="text-muted fw-semibold">{{ wf_creator }}</small>
+            </div>
+            <div class="d-flex align-items-center flex-wrap">
+                {% for stage_label, stage_role, stage_icon in wf_stages %}
+                <div class="d-flex align-items-center">
+                    <div class="text-center" style="min-width:110px;">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-1" style="width:42px;height:42px;background:#e8f0fe;border:2px solid #2A2A86;font-size:18px;">{{ stage_icon }}</div>
+                        <div style="font-size:11px;font-weight:600;color:#2A2A86;">{{ stage_label }}</div>
+                        <div style="font-size:10px;color:#718096;">{{ stage_role }}</div>
+                    </div>
+                    {% if not forloop.last %}<div style="width:36px;height:2px;background:#2A2A86;margin-bottom:22px;"></div>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- VGP -->
+<div class="card mb-3">
+    <div class="card-header fw-bold" style="background:linear-gradient(135deg,#065f46,#059669);color:white;">
+        <i class="bi bi-person-badge-fill me-2"></i>Visitor Gate Pass (VGP)
+    </div>
+    <div class="card-body">
+        <div class="d-flex align-items-center flex-wrap">
+            {% for stage_label, stage_role, stage_icon in vgp_workflow %}
+            <div class="d-flex align-items-center">
+                <div class="text-center" style="min-width:110px;">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-1" style="width:42px;height:42px;background:#d1fae5;border:2px solid #059669;font-size:18px;">{{ stage_icon }}</div>
+                    <div style="font-size:11px;font-weight:600;color:#065f46;">{{ stage_label }}</div>
+                    <div style="font-size:10px;color:#718096;">{{ stage_role }}</div>
+                </div>
+                {% if not forloop.last %}<div style="width:36px;height:2px;background:#059669;margin-bottom:22px;"></div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- MGP -->
+<div class="card mb-3">
+    <div class="card-header fw-bold" style="background:linear-gradient(135deg,#7f1d1d,#dc2626);color:white;">
+        <i class="bi bi-box-seam me-2"></i>Material Gate Pass (MGP) &mdash; 2 Workflows
+    </div>
+    <div class="card-body">
+        {% for wf_name, wf_creator, wf_stages in mgp_workflows %}
+        <div class="mb-3 {% if not forloop.last %}pb-3 border-bottom{% endif %}">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge bg-danger">{{ wf_name }}</span>
+                <small class="text-muted fw-semibold">{{ wf_creator }}</small>
+            </div>
+            <div class="d-flex align-items-center flex-wrap">
+                {% for stage_label, stage_role, stage_icon in wf_stages %}
+                <div class="d-flex align-items-center">
+                    <div class="text-center" style="min-width:110px;">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-1" style="width:42px;height:42px;background:#fee2e2;border:2px solid #dc2626;font-size:18px;">{{ stage_icon }}</div>
+                        <div style="font-size:11px;font-weight:600;color:#991b1b;">{{ stage_label }}</div>
+                        <div style="font-size:10px;color:#718096;">{{ stage_role }}</div>
+                    </div>
+                    {% if not forloop.last %}<div style="width:36px;height:2px;background:#dc2626;margin-bottom:22px;"></div>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- HD -->
+<div class="card mb-3">
+    <div class="card-header fw-bold" style="background:linear-gradient(135deg,#4c1d95,#7c3aed);color:white;">
+        <i class="bi bi-headset me-2"></i>IT Help Desk (HD)
+    </div>
+    <div class="card-body">
+        <div class="d-flex align-items-center flex-wrap">
+            {% for stage_label, stage_role, stage_icon in hd_workflow %}
+            <div class="d-flex align-items-center">
+                <div class="text-center" style="min-width:110px;">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-1" style="width:42px;height:42px;background:#ede9fe;border:2px solid #7c3aed;font-size:18px;">{{ stage_icon }}</div>
+                    <div style="font-size:11px;font-weight:600;color:#4c1d95;">{{ stage_label }}</div>
+                    <div style="font-size:10px;color:#718096;">{{ stage_role }}</div>
+                </div>
+                {% if not forloop.last %}<div style="width:36px;height:2px;background:#7c3aed;margin-bottom:22px;"></div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Grievance -->
+<div class="card mb-3">
+    <div class="card-header fw-bold" style="background:linear-gradient(135deg,#7b4bb3,#9b59b6);color:white;">
+        <i class="bi bi-megaphone-fill me-2"></i>Grievance Redressal
+    </div>
+    <div class="card-body">
+        <div class="d-flex align-items-center flex-wrap">
+            {% for stage_label, stage_role, stage_icon in grv_workflow %}
+            <div class="d-flex align-items-center">
+                <div class="text-center" style="min-width:110px;">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-1" style="width:42px;height:42px;background:#f3e8ff;border:2px solid #9b59b6;font-size:18px;">{{ stage_icon }}</div>
+                    <div style="font-size:11px;font-weight:600;color:#7b4bb3;">{{ stage_label }}</div>
+                    <div style="font-size:10px;color:#718096;">{{ stage_role }}</div>
+                </div>
+                {% if not forloop.last %}<div style="width:36px;height:2px;background:#9b59b6;margin-bottom:22px;"></div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Email Recipients -->
+<div class="card">
+    <div class="card-header fw-bold"><i class="bi bi-envelope-gear me-2"></i>Email Notification Recipients per Module</div>
+    <div class="card-body">
+        <div class="alert alert-info border-0 mb-3" style="font-size:13px;">
+            <i class="bi bi-info-circle me-2"></i>Select which roles receive email notifications for each module.
+        </div>
+        {% for module_key, module_label, module_icon, module_color in workflow_modules %}
+        <div class="card mb-3">
+            <div class="card-header d-flex align-items-center gap-2" style="background:{{ module_color }};color:white;">
+                <i class="bi {{ module_icon }} fs-5"></i><span class="fw-bold">{{ module_label }}</span>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_workflow_recipients">
+                    <input type="hidden" name="module_key" value="{{ module_key }}">
+                    <div class="row g-2">
+                        {% for role_val, role_label in role_choices %}
+                        <div class="col-md-4 col-6">
+                            <div class="form-check border rounded p-2">
+                                <input class="form-check-input" type="checkbox" name="recipient_roles" value="{{ role_val }}"
+                                       id="wf_{{ module_key }}_{{ role_val }}"
+                                       {% if role_val in workflow_recipients|get_item:module_key %}checked{% endif %}>
+                                <label class="form-check-label" for="wf_{{ module_key }}_{{ role_val }}"><strong>{{ role_label }}</strong></label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-save me-1"></i>Save {{ module_label }} Recipients</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+</div>
+<!-- end tab-workflows -->
+
+<!-- Tab: Print Format Designer -->
+<div class="tab-pane fade" id="tab-print-format">
+<div class="alert alert-info border-0 mb-3" style="font-size:13px;">
+    <i class="bi bi-info-circle me-2"></i>
+    Configure which fields appear on the printed pass. Toggle fields on/off and reorder them. Changes reflect immediately on all new prints.
+</div>
+<ul class="nav nav-pills mb-3" id="printFormatTabs">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#pf-igp"><i class="bi bi-person-walking me-1"></i>IGP</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#pf-vgp"><i class="bi bi-person-badge-fill me-1"></i>VGP</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#pf-mgp"><i class="bi bi-box-seam me-1"></i>MGP</a></li>
+</ul>
+<div class="tab-content">
+    {% for pf_key, pf_label, pf_fields in print_format_modules %}
+    <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="pf-{{ pf_key }}">
+        <div class="card">
+            <div class="card-header fw-bold"><i class="bi bi-layout-text-window me-2"></i>{{ pf_label }} Print Fields</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_print_format">
+                    <input type="hidden" name="pf_module" value="{{ pf_key }}">
+                    <div class="row g-2 mb-3">
+                        {% for field_key, field_label, is_enabled in pf_fields %}
+                        <div class="col-md-4 col-6">
+                            <div class="form-check border rounded p-2 d-flex align-items-center gap-2">
+                                <input class="form-check-input" type="checkbox"
+                                       name="pf_fields" value="{{ field_key }}"
+                                       id="pf_{{ pf_key }}_{{ field_key }}"
+                                       {% if is_enabled %}checked{% endif %}>
+                                <label class="form-check-label flex-grow-1" for="pf_{{ pf_key }}_{{ field_key }}">
+                                    {{ field_label }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-save me-1"></i>Save {{ pf_label }} Print Format
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+</div>
+<!-- end tab-print-format -->
+
+<!-- Tab: Backup & Restore -->
+<div class="tab-pane fade" id="tab-backup">
+<div class="alert alert-warning border-0 mb-3" style="font-size:13px;">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    <strong>Backup</strong> exports all data as a JSON file. <strong>Restore</strong> imports a previously exported backup. Restore will <strong>overwrite</strong> existing data.
+</div>
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header fw-bold"><i class="bi bi-cloud-arrow-down me-2 text-success"></i>Download Backup</div>
+            <div class="card-body">
+                <p class="text-muted" style="font-size:13px;">Export all master data (employees, settings, pass records) as a JSON backup file.</p>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'accounts:backup_download' %}" class="btn btn-success">
+                        <i class="bi bi-download me-2"></i>Download Full Backup (JSON)
+                    </a>
+                    <a href="{% url 'accounts:backup_download' %}?type=settings" class="btn btn-outline-success">
+                        <i class="bi bi-gear me-2"></i>Download Settings Only
+                    </a>
+                    <a href="{% url 'accounts:backup_download' %}?type=employees" class="btn btn-outline-primary">
+                        <i class="bi bi-people me-2"></i>Download Employees Only
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header fw-bold"><i class="bi bi-cloud-arrow-up me-2 text-danger"></i>Restore Backup</div>
+            <div class="card-body">
+                <div class="alert alert-danger border-0" style="font-size:12px;">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    Restoring will overwrite existing records. This cannot be undone.
+                </div>
+                <form method="post" enctype="multipart/form-data" onsubmit="return confirm('Restore backup? This will overwrite existing data.')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="restore_backup">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Select Backup File (.json)</label>
+                        <input type="file" name="backup_file" class="form-control" accept=".json" required>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100">
+                        <i class="bi bi-upload me-2"></i>Restore from Backup
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto Backups List -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header fw-bold d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-clock-history me-2 text-primary"></i>Automatic Daily Backups</span>
+                <small class="text-muted">Stored in <code>backups/</code> folder &bull; Last 30 kept</small>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info border-0 mb-3" style="font-size:13px;">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Schedule daily backup: Run <code>python manage.py auto_backup</code> via Windows Task Scheduler at midnight.
+                </div>
+                {% if auto_backups %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead><tr><th>Filename</th><th>Size</th><th>Action</th></tr></thead>
+                        <tbody>
+                            {% for bk in auto_backups %}
+                            <tr>
+                                <td><code style="font-size:12px;">{{ bk.name }}</code></td>
+                                <td><small>{{ bk.size_kb }} KB</small></td>
+                                <td>
+                                    <a href="{% url 'accounts:backup_download' %}?file={{ bk.name }}" class="btn btn-xs btn-outline-success" style="padding:2px 10px;font-size:11px;">
+                                        <i class="bi bi-download me-1"></i>Download
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3" style="font-size:13px;">
+                    <i class="bi bi-inbox me-2"></i>No automatic backups found. Run <code>python manage.py auto_backup</code> to create one.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<!-- end tab-backup -->
+
+<!-- Tab: Email Log -->
+<div class="tab-pane fade" id="tab-email-log">
+<div class="card">
+    <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-envelope-check text-primary"></i>
+        <span class="fw-bold">Email Log</span>
+        <span class="badge bg-secondary ms-auto">{{ email_logs|length }} records</span>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-4">
+                <input type="text" class="form-control form-control-sm" name="email_q" value="{{ email_q }}" placeholder="Search recipient/subject/message">
+            </div>
+            <div class="col-md-2">
+                <select name="email_status" class="form-select form-select-sm">
+                    <option value="">All Status</option>
+                    <option value="sent" {% if email_status == 'sent' %}selected{% endif %}>Sent</option>
+                    <option value="failed" {% if email_status == 'failed' %}selected{% endif %}>Failed</option>
+                    <option value="skipped" {% if email_status == 'skipped' %}selected{% endif %}>Skipped</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="email_channel" class="form-select form-select-sm">
+                    <option value="">All Channel</option>
+                    <option value="igp" {% if email_channel == 'igp' %}selected{% endif %}>IGP</option>
+                    <option value="vgp" {% if email_channel == 'vgp' %}selected{% endif %}>VGP</option>
+                    <option value="mgp" {% if email_channel == 'mgp' %}selected{% endif %}>MGP</option>
+                    <option value="hd" {% if email_channel == 'hd' %}selected{% endif %}>HD</option>
+                    <option value="system" {% if email_channel == 'system' %}selected{% endif %}>System</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="date" class="form-control form-control-sm" name="email_date" value="{{ email_date }}">
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search me-1"></i>Filter</button>
+                <a href="?export=email_log&email_q={{ email_q|urlencode }}&email_status={{ email_status|urlencode }}&email_channel={{ email_channel|urlencode }}&email_date={{ email_date|urlencode }}" class="btn btn-success btn-sm w-100"><i class="bi bi-download me-1"></i>Export</a>
+            </div>
+        </form>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Time</th>
+                        <th>Channel</th>
+                        <th>Recipient</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                        <th>Reference</th>
+                        <th>Error</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in email_logs %}
+                    <tr>
+                        <td><small>{{ row.created_at|date:"d M Y, H:i:s" }}</small></td>
+                        <td><span class="badge bg-info text-dark">{{ row.channel|upper }}</span></td>
+                        <td>{{ row.recipient }}</td>
+                        <td>{{ row.subject|truncatechars:80 }}</td>
+                        <td>
+                            {% if row.status == 'sent' %}
+                                <span class="badge bg-success">Sent</span>
+                            {% elif row.status == 'failed' %}
+                                <span class="badge bg-danger">Failed</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Skipped</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ row.related_module }} {{ row.related_id }}</td>
+                        <td><small class="text-muted">{{ row.error|default:"-"|truncatechars:60 }}</small></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted py-4">No email logs available.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div> <!-- end tab-email-log -->
+
+<!-- Tab: Notification Log -->
+<div class="tab-pane fade" id="tab-notification-log">
+<div class="card">
+    <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-card-list text-primary"></i>
+        <span class="fw-bold">Notification Log</span>
+        <span class="badge bg-secondary ms-auto">{{ notification_logs|length }} records</span>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-4">
+                <input type="text" class="form-control form-control-sm" name="notif_q" value="{{ notif_q }}" placeholder="Search title/description/type/user">
+            </div>
+            <div class="col-md-2">
+                <select name="notif_read" class="form-select form-select-sm">
+                    <option value="">All Status</option>
+                    <option value="read" {% if notif_read == 'read' %}selected{% endif %}>Read</option>
+                    <option value="unread" {% if notif_read == 'unread' %}selected{% endif %}>Unread</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="notif_module" class="form-select form-select-sm">
+                    <option value="">All Module</option>
+                    <option value="IGP" {% if notif_module == 'IGP' %}selected{% endif %}>IGP</option>
+                    <option value="VGP" {% if notif_module == 'VGP' %}selected{% endif %}>VGP</option>
+                    <option value="MGP" {% if notif_module == 'MGP' %}selected{% endif %}>MGP</option>
+                    <option value="HD" {% if notif_module == 'HD' %}selected{% endif %}>HD</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="date" class="form-control form-control-sm" name="notif_date" value="{{ notif_date }}">
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search me-1"></i>Filter</button>
+                <a href="?export=notification_log&notif_q={{ notif_q|urlencode }}&notif_read={{ notif_read|urlencode }}&notif_module={{ notif_module|urlencode }}&notif_date={{ notif_date|urlencode }}" class="btn btn-success btn-sm w-100"><i class="bi bi-download me-1"></i>Export</a>
+            </div>
+        </form>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Time</th>
+                        <th>Recipient</th>
+                        <th>Type</th>
+                        <th>Module</th>
+                        <th>Title</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for n in notification_logs %}
+                    <tr>
+                        <td><small>{{ n.created_at|date:"d M Y, H:i:s" }}</small></td>
+                        <td>{{ n.recipient.employee_name }} <small class="text-muted">({{ n.recipient.username }})</small></td>
+                        <td><code>{{ n.notification_type }}</code></td>
+                        <td>{{ n.related_module|default:"-" }}</td>
+                        <td>{{ n.title|truncatechars:90 }}</td>
+                        <td>
+                            {% if n.is_read %}
+                                <span class="badge bg-success">Read</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Unread</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">No notification logs available.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div> <!-- end tab-notification-log -->
+
+<!-- Tab: System Info -->
+<div class="tab-pane fade" id="tab-info">
+<div class="card">
+    <div class="card-header"><i class="bi bi-info-circle me-2"></i>System Information</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3 col-6">
+                <div class="text-muted small">Last Settings Update</div>
+                <div class="fw-semibold">{{ setting.updated_at|date:"d M Y, H:i" }}</div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="text-muted small">Server Base URL</div>
+                <div class="fw-semibold" style="font-size:13px;">{{ request.scheme }}://{{ request.get_host }}</div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="text-muted small">Total IGP Passes</div>
+                <div class="fw-semibold">{{ igp_total }}</div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="text-muted small">Total VGP Passes</div>
+                <div class="fw-semibold">{{ vgp_total }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+</div> <!-- end tab-info -->
+
+{# removed tab-matrix block #}
+
+</div> <!-- end tab-content -->
+
+{% block extra_js %}
+<script>
+function resetRoleForm(btn) {
+    const form = btn.closest('form');
+    form.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+}
+
+function confirmDbReset(form, expectedText, recordDesc) {
+    const typed = form.querySelector('input[name=confirm_text]').value.trim();
+    if (typed !== expectedText) {
+        alert('Confirmation text does not match. Please type exactly: ' + expectedText);
+        return false;
+    }
+    return confirm('⚠️ FINAL WARNING\n\nYou are about to permanently delete ' + recordDesc + '.\n\nThis action CANNOT be undone.\n\nClick OK only if you are absolutely sure.');
+}
+
+function toggleSmtpPwd() {
+    const p = document.getElementById('smtpPwd');
+    const i = document.getElementById('smtpEye');
+    p.type = p.type === 'password' ? 'text' : 'password';
+    i.className = p.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+
+function adjustSession(delta) {
+    const el = document.getElementById('sessionTimeout');
+    if (!el) return;
+    const cur = parseInt(el.value || '0', 10) || 0;
+    let next = cur + delta;
+    if (next < 1) next = 1;
+    if (next > 1440) next = 1440;
+    el.value = next;
+}
+
+function updateScopeFields() {
+    const scope = document.getElementById('notifScope').value;
+    document.getElementById('roleField').style.display = scope === 'role' ? 'block' : 'none';
+    document.getElementById('employeeField').style.display = scope === 'employee' ? 'block' : 'none';
+    document.getElementById('departmentField').style.display = scope === 'department' ? 'block' : 'none';
+    
+    // Clear other fields
+    if (scope !== 'role') document.querySelector('select[name="notification_role"]').value = '';
+    if (scope !== 'employee') document.querySelector('select[name="notification_employee"]').value = '';
+    if (scope !== 'department') document.querySelector('select[name="notification_department"]').value = '';
+}
+</script>
+{% endblock %}
+{% endblock %}

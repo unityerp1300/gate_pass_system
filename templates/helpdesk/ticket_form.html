@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-plus-circle me-2"></i>{{ title }}</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'helpdesk:dashboard' %}">Help Desk</a></li>
+            <li class="breadcrumb-item active">New Ticket</li>
+        </ol></nav>
+    </div>
+</div>
+
+<div class="card" style="max-width:700px;">
+    <div class="card-header"><i class="bi bi-ticket-detailed me-2"></i>Ticket Details</div>
+    <div class="card-body">
+        <form method="post" id="helpdesk-ticket-form">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label">DocType *</label>
+                {{ form.doc_type }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Issue Title *</label>
+                {{ form.title }}
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Category *</label>
+                    {{ form.category }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Priority *</label>
+                    {{ form.priority }}
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label">Description *</label>
+                {{ form.description }}
+                <small class="text-muted">Include steps to reproduce, error messages, screenshots description, etc.</small>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-send me-2"></i>Submit Ticket
+                </button>
+                <a href="{% url 'helpdesk:ticket_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getInvalidFieldLabel(field) {
+    const formLabel = field.closest('.col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-6, .col-md-12, .col-12, .mb-3')?.querySelector('.form-label');
+    return formLabel ? formLabel.textContent.replace('*', '').trim() : (field.name || 'required field');
+}
+
+document.getElementById('helpdesk-ticket-form').addEventListener('submit', function (e) {
+    if (this.checkValidity()) return;
+    e.preventDefault();
+    const invalidField = this.querySelector(':invalid');
+    if (!invalidField) return;
+    alert(`Please fill the mandatory field: ${getInvalidFieldLabel(invalidField)}.`);
+    if (typeof invalidField.reportValidity === 'function') invalidField.reportValidity();
+    invalidField.focus();
+});
+</script>
+{% endblock %}

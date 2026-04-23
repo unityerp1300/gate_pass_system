@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-person-walking me-2"></i>{{ title }}</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'internal_pass:pass_list' %}">Internal Gate Pass</a></li>
+            <li class="breadcrumb-item active">New</li>
+        </ol></nav>
+    </div>
+</div>
+
+<div class="card" style="max-width:800px">
+    <div class="card-header"><i class="bi bi-file-earmark-plus me-2"></i>Gate Pass Details</div>
+    <div class="card-body">
+        <form method="post" id="igp-pass-form">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Purpose *</label>
+                    {{ form.purpose }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">City *</label>
+                    {{ form.destination }}
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Purpose Details *</label>
+                    {{ form.purpose_detail }}
+                </div>
+                <!-- Out Date -->
+                <div class="col-md-4">
+                    <label class="form-label d-flex align-items-center gap-2">
+                        Out Date *
+                        <span class="d-flex align-items-center gap-1 ms-auto">
+                            <input type="checkbox" id="now_out_date" class="form-check-input now-cb" data-target="id_out_date" data-type="date">
+                            <label for="now_out_date" class="form-check-label small text-primary fw-semibold mb-0">Today</label>
+                        </span>
+                    </label>
+                    {{ form.out_date }}
+                </div>
+                <!-- Out Time -->
+                <div class="col-md-4">
+                    <label class="form-label d-flex align-items-center gap-2">
+                        Out Time *
+                        <span class="d-flex align-items-center gap-1 ms-auto">
+                            <input type="checkbox" id="now_out_time" class="form-check-input now-cb" data-target="id_out_time" data-type="time">
+                            <label for="now_out_time" class="form-check-label small text-primary fw-semibold mb-0">Now</label>
+                        </span>
+                    </label>
+                    {{ form.out_time }}
+                </div>
+                <!-- Expected Return -->
+                <div class="col-md-4">
+                    <label class="form-label d-flex align-items-center gap-2">
+                        Expected Return <small class="text-muted">(optional)</small>
+                        <span class="d-flex align-items-center gap-1 ms-auto">
+                            <input type="checkbox" id="now_return_time" class="form-check-input now-cb" data-target="id_expected_return_time" data-type="time">
+                            <label for="now_return_time" class="form-check-label small text-primary fw-semibold mb-0">Now</label>
+                        </span>
+                    </label>
+                    {{ form.expected_return_time }}
+                    <div class="form-check mt-1">
+                        <input class="form-check-input" type="checkbox" id="on_leave_cb" name="on_leave"
+                               onchange="toggleReturnTime(this)">
+                        <label class="form-check-label small text-warning-emphasis fw-semibold" for="on_leave_cb">
+                            <i class="bi bi-calendar-x me-1"></i>On Leave (no return time)
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Transport Mode *</label>
+                    {{ form.transport_mode }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Vehicle Number</label>
+                    {{ form.vehicle_number }}
+                </div>
+            </div>
+            <div class="alert alert-info mt-3 mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                Your reporting manager will be notified via email for approval.
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-send me-2"></i>Submit for Approval
+                </button>
+                <a href="{% url 'internal_pass:pass_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleReturnTime(cb) {
+    const el = document.getElementById('id_expected_return_time');
+    const nowCb = document.getElementById('now_return_time');
+    if (cb.checked) {
+        el.value = '';
+        el.disabled = true;
+        if (nowCb) { nowCb.checked = false; nowCb.disabled = true; }
+    } else {
+        el.disabled = false;
+        if (nowCb) nowCb.disabled = false;
+    }
+}
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function nowDate(){ const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function nowTime(){ const d=new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+
+document.querySelectorAll('.now-cb').forEach(cb => {
+    cb.addEventListener('change', function(){
+        const el = document.getElementById(this.dataset.target);
+        if(this.checked){
+            el.value = this.dataset.type === 'date' ? nowDate() : nowTime();
+            el.readOnly = true;
+        } else {
+            el.readOnly = false;
+        }
+    });
+});
+
+function getInvalidFieldLabel(field) {
+    const formLabel = field.closest('.col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-6, .col-md-12, .col-12, .mb-3')?.querySelector('.form-label');
+    return formLabel ? formLabel.textContent.replace('*', '').trim() : (field.name || 'required field');
+}
+
+document.getElementById('igp-pass-form').addEventListener('submit', function (e) {
+    if (this.checkValidity()) return;
+    e.preventDefault();
+    const invalidField = this.querySelector(':invalid');
+    if (!invalidField) return;
+    alert(`Please fill the mandatory field: ${getInvalidFieldLabel(invalidField)}.`);
+    if (typeof invalidField.reportValidity === 'function') invalidField.reportValidity();
+    invalidField.focus();
+});
+</script>
+{% endblock %}

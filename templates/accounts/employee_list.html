@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% block title %}Employees{% endblock %}
+{% block page_title %}Account Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+        position: absolute; cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: #dc3545; border-radius: 26px;
+        transition: 0.3s;
+    }
+    .toggle-slider:before {
+        position: absolute; content: '';
+        height: 20px; width: 20px;
+        left: 3px; bottom: 3px;
+        background: white; border-radius: 50%;
+        transition: 0.3s;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+    input:checked + .toggle-slider { background: #28a745; }
+    input:checked + .toggle-slider:before { transform: translateX(22px); }
+    .toggle-label { font-size: 11px; font-weight: 600; margin-left: 6px; vertical-align: middle; }
+    .status-enabled { color: #28a745; }
+    .status-disabled { color: #dc3545; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-people-fill me-2"></i>Employee List</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Employees</li>
+        </ol></nav>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        {% if can_write %}
+        <a href="{% url 'accounts:download_template' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-download me-1"></i>Template
+        </a>
+        <form method="post" action="{% url 'accounts:import_employees' %}" enctype="multipart/form-data" class="d-flex gap-2">
+            {% csrf_token %}
+            <input type="file" name="excel_file" accept=".xlsx,.xls" class="form-control form-control-sm" style="width:200px" required>
+            <button type="submit" class="btn btn-warning btn-sm"><i class="bi bi-upload me-1"></i>Import</button>
+        </form>
+        {% endif %}
+        {% if can_export %}
+        <a href="{% url 'accounts:export_employees' %}" class="btn btn-success btn-sm">
+            <i class="bi bi-file-earmark-excel me-1"></i>Export
+        </a>
+        {% endif %}
+        {% if can_write %}
+        <a href="{% url 'accounts:employee_create' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-person-plus me-1"></i>Add Employee
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary badges -->
+<div class="d-flex gap-3 mb-3">
+    <span class="badge bg-success px-3 py-2 fs-6">
+        <i class="bi bi-person-check me-1"></i>Active: {{ active_count }}
+    </span>
+    <span class="badge bg-secondary px-3 py-2 fs-6">
+        <i class="bi bi-people me-1"></i>Total: {{ total_count }}
+    </span>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="d-flex gap-2 flex-wrap align-items-center">
+            <div class="input-group" style="max-width:320px">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Search name, code...">
+            </div>
+            <select name="dept" class="form-select form-select-sm" style="max-width:220px" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                {% for val,lbl in department_choices %}
+                <option value="{{ val }}" {% if dept == val %}selected{% endif %}>{{ lbl }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+            {% if q or dept %}<a href="{% url 'accounts:employee_list' %}" class="btn btn-outline-secondary btn-sm">Clear</a>{% endif %}
+        </form>
+    </div>
+</div>
+
+<form method="post" action="{% url 'accounts:bulk_action' %}" id="bulkForm">
+{% csrf_token %}
+
+<!-- Bulk action toolbar (hidden until checkbox selected) -->
+<div id="bulkToolbar" class="d-none mb-2 d-flex gap-2 align-items-center">
+    <span class="text-muted small" id="selectedCount">0 selected</span>
+    <button type="submit" name="action" value="duplicate" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-copy me-1"></i>Duplicate
+    </button>
+    <button type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger"
+            onclick="return confirm('Permanently delete selected employees?')">
+        <i class="bi bi-trash me-1"></i>Delete
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th style="width:36px;">
+                            <input type="checkbox" id="checkAll" class="form-check-input">
+                        </th>
+                        <th>#</th><th>Name</th><th>Code</th><th>Department</th>
+                        <th>Designation</th><th>Role</th><th>Email</th>
+                        <th>Username</th>
+                        {% if request.user.role == 'administrator' or request.user.is_superuser %}<th>Password</th>{% endif %}
+                        <th>Accounts</th>
+                        <th class="text-center">Account Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for emp in employees %}
+                <tr class="{% if not emp.is_active %}table-light text-muted{% endif %}">
+                    <td><input type="checkbox" name="selected_ids" value="{{ emp.pk }}" class="form-check-input row-check" {% if emp.pk == request.user.pk %}disabled{% endif %}></td>
+                    <td class="text-muted">{{ page_obj.start_index|add:forloop.counter0 }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width:32px;height:32px;border-radius:50%;background:{% if emp.is_active %}linear-gradient(135deg,#2A2A86,#3C3CA0){% else %}#adb5bd{% endif %};display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:13px;flex-shrink:0;">
+                                {{ emp.employee_name|first|upper }}
+                            </div>
+                            <strong>{{ emp.employee_name }}</strong>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ emp.employee_code }}</span></td>
+                    <td>{{ emp.get_departments_display }}</td>
+                    <td>{{ emp.designation }}</td>
+                    <td><span class="badge bg-primary">{{ emp.get_roles_display }}</span></td>
+                    <td>{{ emp.email }}</td>
+                    <td>{{ emp.username }}</td>
+                    {% if request.user.role == 'administrator' or request.user.is_superuser %}
+                    <td>
+                        <code>{{ emp.password_plain }}</code>
+                        {% if emp.must_change_password %}
+                        <span class="badge bg-warning text-dark ms-1" title="OTP not yet changed">OTP</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+
+                    <td style="white-space:nowrap;">
+                        <span class="badge bg-light text-dark border">System Access</span>
+                    </td>
+
+                    <!-- Toggle Status -->
+                    <td class="text-center">
+                        {% if emp.pk != request.user.pk and can_write %}
+                        <form method="post" action="{% url 'accounts:toggle_status' emp.pk %}" class="d-inline"
+                              onsubmit="return confirmToggle('{{ emp.employee_name }}', {{ emp.is_active|yesno:'true,false' }})">
+                            {% csrf_token %}
+                            <div class="d-flex align-items-center justify-content-center gap-2">
+                                <label class="toggle-switch mb-0">
+                                    <input type="checkbox" {% if emp.is_active %}checked{% endif %}
+                                           onchange="this.form.submit()">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="toggle-label {% if emp.is_active %}status-enabled{% else %}status-disabled{% endif %}">
+                                    {% if emp.is_active %}Enabled{% else %}Disabled{% endif %}
+                                </span>
+                            </div>
+                        </form>
+                        {% else %}
+                        <div class="d-flex align-items-center justify-content-center gap-2">
+                            <label class="toggle-switch mb-0">
+                                <input type="checkbox" checked disabled>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label status-enabled">You</span>
+                        </div>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <div class="d-flex gap-1">
+                            {% if can_write %}
+                            <a href="{% url 'accounts:employee_edit' emp.pk %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
+                            {% if can_delete and emp.pk != request.user.pk %}
+                            <a href="{% url 'accounts:employee_delete' emp.pk %}" class="btn btn-sm btn-outline-danger"
+                               onclick="return confirm('Permanently delete {{ emp.employee_name }}? This cannot be undone.')" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="12" class="text-center text-muted py-4">No employees found.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="text-muted small mt-2">Total: {{ employees.count }} employee(s)</div>
+    </div>
+</div>
+</form>
+
+{% include 'pagination.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const checkAll   = document.getElementById('checkAll');
+const toolbar    = document.getElementById('bulkToolbar');
+const countLabel = document.getElementById('selectedCount');
+
+function updateToolbar() {
+    const checked = document.querySelectorAll('.row-check:checked');
+    toolbar.classList.toggle('d-none', checked.length === 0);
+    countLabel.textContent = checked.length + ' selected';
+}
+checkAll.addEventListener('change', () => {
+    document.querySelectorAll('.row-check').forEach(cb => cb.checked = checkAll.checked);
+    updateToolbar();
+});
+document.querySelectorAll('.row-check').forEach(cb => cb.addEventListener('change', updateToolbar));
+
+function confirmToggle(name, isActive) {
+    const action = isActive ? 'DISABLE' : 'ENABLE';
+    const msg = isActive
+        ? `Disable "${name}"?\n\nThis user will immediately lose access to the system.`
+        : `Enable "${name}"?\n\nThis user will regain access to the system.`;
+    return confirm(msg);
+}
+</script>
+{% endblock %}

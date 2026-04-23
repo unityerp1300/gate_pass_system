@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-box-arrow-up-right me-2"></i>{{ title }}</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'material_pass:request_list' %}">Material Gate Pass Requests</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'material_pass:request_detail' mr.pk %}">{{ mr.request_number }}</a></li>
+            <li class="breadcrumb-item active">Create Gate Pass</li>
+        </ol></nav>
+    </div>
+</div>
+
+<!-- Request Reference Banner -->
+<div class="alert alert-info d-flex align-items-center gap-3 mb-3" style="font-size:13px;">
+    <i class="bi bi-info-circle-fill fs-5"></i>
+    <div>
+        Creating Gate Pass from <strong>{{ mr.request_number }}</strong> &mdash;
+        Dept: <strong>{{ mr.department }}</strong> &mdash;
+        Requested by: <strong>{{ mr.employee.employee_name }}</strong> &mdash;
+        Reason: {{ mr.reason|truncatechars:80 }}
+    </div>
+</div>
+
+<form method="post" id="mgp-convert-form">
+{% csrf_token %}
+
+<!-- Pass Info -->
+<div class="card mb-3">
+    <div class="card-header fw-semibold">Pass Information</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Direction *</label>{{ form.direction }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Document Copy</label>{{ form.copy_type }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date *</label>{{ form.pass_date }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Time *</label>{{ form.pass_time }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label d-block">Material Type *</label>
+                <div class="d-flex gap-4 mt-1">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="returnable_choice" id="chk_ret" value="1" {% if form.is_returnable.value %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold" for="chk_ret">Returnable</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="returnable_choice" id="chk_nonret" value="0" {% if not form.is_returnable.value %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold" for="chk_nonret">Non-Returnable</label>
+                    </div>
+                </div>
+                <div style="display:none;">{{ form.is_returnable }}</div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Department *</label>{{ form.department }}
+            </div>
+            <div class="col-md-4" id="return-date-wrap">
+                <label class="form-label">Expected Return Date</label>{{ form.expected_return_date }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dispatch -->
+<div class="card mb-3">
+    <div class="card-header fw-semibold">Dispatch Details</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3"><label class="form-label">Vehicle No.</label>{{ form.vehicle_number }}</div>
+            <div class="col-md-3"><label class="form-label">Transporter</label>{{ form.transporter_name }}</div>
+            <div class="col-md-3"><label class="form-label">LR No.</label>{{ form.lr_number }}</div>
+            <div class="col-md-3"><label class="form-label">Mode of Transport</label>{{ form.transport_mode }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Consignor -->
+<div class="card mb-3">
+    <div class="card-header fw-semibold">Consignor (Sender)</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4"><label class="form-label">Consignor Name</label>{{ form.consignor_name }}</div>
+            <div class="col-md-4"><label class="form-label">Factory Address</label>{{ form.consignor_address }}</div>
+            <div class="col-md-4"><label class="form-label">Office Address</label>{{ form.consignor_office_address }}</div>
+            <div class="col-md-3"><label class="form-label">Contact Person</label>{{ form.consignor_contact }}</div>
+            <div class="col-md-3"><label class="form-label">State</label>{{ form.consignor_state }}</div>
+            <div class="col-md-2"><label class="form-label">State Code</label>{{ form.consignor_state_code }}</div>
+            <div class="col-md-2"><label class="form-label">PAN</label>{{ form.consignor_pan }}</div>
+            <div class="col-md-2"><label class="form-label">GSTIN</label>{{ form.consignor_gstin }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Consignee -->
+<div class="card mb-3">
+    <div class="card-header fw-semibold">Consignee (Shipped To)</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4"><label class="form-label">Party Name *</label>{{ form.party_name }}</div>
+            <div class="col-md-4"><label class="form-label">Address</label>{{ form.party_address }}</div>
+            <div class="col-md-4"><label class="form-label">City</label>{{ form.city }}</div>
+            <div class="col-md-3"><label class="form-label">Contact Person</label>{{ form.party_contact_person }}</div>
+            <div class="col-md-3"><label class="form-label">Contact Number</label>{{ form.party_contact_number }}</div>
+            <div class="col-md-2"><label class="form-label">State</label>{{ form.party_state }}</div>
+            <div class="col-md-2"><label class="form-label">PAN</label>{{ form.party_pan }}</div>
+            <div class="col-md-2"><label class="form-label">GSTIN</label>{{ form.party_gstin }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Items (pre-filled from request) -->
+<div class="card mb-3">
+    <div class="card-header fw-semibold">Material Items <small class="text-muted fw-normal">(pre-filled from request)</small></div>
+    <div class="card-body p-0">
+        {{ formset.management_form }}
+        <div class="table-responsive">
+        <table class="table table-bordered table-sm mb-0" id="items-table">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:30px;">#</th>
+                    <th>Particulars *</th>
+                    <th style="width:90px;">HSN Code</th>
+                    <th style="width:80px;">Quantity *</th>
+                    <th style="width:80px;">Unit</th>
+                    <th style="width:100px;">Rate</th>
+                    <th style="width:100px;">Total</th>
+                    <th style="width:110px;">Serial No.</th>
+                    <th style="width:40px;"></th>
+                </tr>
+            </thead>
+            <tbody id="items-body">
+            {% for item_form in formset %}
+            <tr class="item-row">
+                {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+                <td class="text-center text-muted row-num">{{ forloop.counter }}</td>
+                <td>{{ item_form.description }}</td>
+                <td>{{ item_form.hsn_code }}</td>
+                <td>{{ item_form.quantity }}</td>
+                <td>{{ item_form.unit }}</td>
+                <td>{{ item_form.rate }}</td>
+                <td><input type="text" class="form-control form-control-sm total-val" readonly tabindex="-1"></td>
+                <td>{{ item_form.serial_number }}</td>
+                <td>{% if formset.can_delete %}<div class="form-check d-flex justify-content-center">{{ item_form.DELETE }}</div>{% endif %}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        <div class="p-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" id="add-item"><i class="bi bi-plus-circle me-1"></i>Add Item</button>
+        </div>
+    </div>
+</div>
+
+<!-- Tax & Reason -->
+<div class="card mb-3">
+    <div class="card-header fw-semibold">Tax & Reason</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4"><label class="form-label">GST Type *</label>{{ form.gst_type }}</div>
+            <div class="col-md-3"><label class="form-label">GST Rate *</label>{{ form.gst_rate }}</div>
+            <div class="col-md-2"><label class="form-label">Rounding Off</label>{{ form.rounding_off }}</div>
+            <div class="col-md-3">
+                <label class="form-label">Tax Preview</label>
+                <div class="border rounded p-2 bg-light" style="font-size:12px;" id="tax-preview">
+                    <div id="preview-cgst" class="d-flex justify-content-between"><span>CGST (<span class="cgst-lbl">0</span>%)</span><span class="cgst-amt fw-semibold">0.00</span></div>
+                    <div id="preview-sgst" class="d-flex justify-content-between"><span>SGST (<span class="sgst-lbl">0</span>%)</span><span class="sgst-amt fw-semibold">0.00</span></div>
+                    <div id="preview-igst" class="d-flex justify-content-between d-none"><span>IGST (<span class="igst-lbl">0</span>%)</span><span class="igst-amt fw-semibold">0.00</span></div>
+                    <hr class="my-1">
+                    <div class="d-flex justify-content-between fw-bold"><span>Total Tax</span><span id="preview-total-tax">0.00</span></div>
+                </div>
+            </div>
+            <div class="col-md-6"><label class="form-label">Reason</label>{{ form.reason }}</div>
+            <div class="col-12"><label class="form-label">Remarks</label>{{ form.remarks }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Bank -->
+<div class="card mb-3">
+    <div class="card-header fw-semibold">Bank Details</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4"><label class="form-label">Bank Name</label>{{ form.bank_name }}</div>
+            <div class="col-md-4"><label class="form-label">Account Number</label>{{ form.bank_account_number }}</div>
+            <div class="col-md-4"><label class="form-label">IFSC Code</label>{{ form.bank_ifsc }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex gap-2">
+    <button type="submit" class="btn btn-success"><i class="bi bi-send me-1"></i>Create Gate Pass</button>
+    <a href="{% url 'material_pass:request_detail' mr.pk %}" class="btn btn-outline-secondary">Cancel</a>
+</div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const chkRet = document.getElementById('chk_ret');
+const chkNon = document.getElementById('chk_nonret');
+const hiddenChk = document.getElementById('id_is_returnable');
+const retWrap = document.getElementById('return-date-wrap');
+function syncRet() { hiddenChk.checked = chkRet.checked; retWrap.style.display = chkRet.checked ? '' : 'none'; }
+chkRet.addEventListener('change', syncRet);
+chkNon.addEventListener('change', syncRet);
+syncRet();
+
+document.getElementById('items-body').addEventListener('input', function(e) {
+    const row = e.target.closest('.item-row');
+    if (!row) return;
+    const qty  = parseFloat(row.querySelector('[name$="-quantity"]')?.value) || 0;
+    const rate = parseFloat(row.querySelector('[name$="-rate"]')?.value) || 0;
+    const tot  = row.querySelector('.total-val');
+    if (tot) tot.value = (qty * rate).toFixed(2);
+});
+
+const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+document.getElementById('add-item').addEventListener('click', function () {
+    const rows = document.querySelectorAll('#items-body .item-row');
+    const idx  = rows.length;
+    const clone = rows[0].cloneNode(true);
+    clone.querySelectorAll('input, textarea').forEach(inp => {
+        inp.name  = inp.name.replace(/-\d+-/, `-${idx}-`);
+        inp.id    = inp.id.replace(/-\d+-/, `-${idx}-`);
+        inp.value = '';
+        if (inp.type === 'checkbox') inp.checked = false;
+    });
+    clone.querySelector('.row-num').textContent = idx + 1;
+    clone.querySelector('.total-val').value = '';
+    document.getElementById('items-body').appendChild(clone);
+    totalForms.value = idx + 1;
+});
+// GST live preview
+function updateTaxPreview() {
+    const gstType = document.getElementById('id_gst_type').value;
+    const gstRate = parseFloat(document.getElementById('id_gst_rate').value) || 0;
+    let subtotal  = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const qty  = parseFloat(row.querySelector('[name$="-quantity"]')?.value) || 0;
+        const rate = parseFloat(row.querySelector('[name$="-rate"]')?.value) || 0;
+        subtotal  += qty * rate;
+    });
+    const cgstRow = document.getElementById('preview-cgst');
+    const sgstRow = document.getElementById('preview-sgst');
+    const igstRow = document.getElementById('preview-igst');
+    if (gstType === 'cgst_sgst') {
+        const half = gstRate / 2;
+        const amt  = (subtotal * half / 100).toFixed(2);
+        cgstRow.classList.remove('d-none'); sgstRow.classList.remove('d-none'); igstRow.classList.add('d-none');
+        document.querySelector('.cgst-lbl').textContent = half.toFixed(2);
+        document.querySelector('.sgst-lbl').textContent = half.toFixed(2);
+        document.querySelector('.cgst-amt').textContent = amt;
+        document.querySelector('.sgst-amt').textContent = amt;
+        document.getElementById('preview-total-tax').textContent = (parseFloat(amt)*2).toFixed(2);
+    } else if (gstType === 'igst') {
+        const amt = (subtotal * gstRate / 100).toFixed(2);
+        cgstRow.classList.add('d-none'); sgstRow.classList.add('d-none'); igstRow.classList.remove('d-none');
+        document.querySelector('.igst-lbl').textContent = gstRate.toFixed(2);
+        document.querySelector('.igst-amt').textContent = amt;
+        document.getElementById('preview-total-tax').textContent = amt;
+    } else {
+        cgstRow.classList.add('d-none'); sgstRow.classList.add('d-none'); igstRow.classList.add('d-none');
+        document.getElementById('preview-total-tax').textContent = '0.00';
+    }
+}
+document.getElementById('id_gst_type').addEventListener('change', updateTaxPreview);
+document.getElementById('id_gst_rate').addEventListener('change', updateTaxPreview);
+document.getElementById('items-body').addEventListener('input', updateTaxPreview);
+updateTaxPreview();
+
+function getInvalidFieldLabel(field) {
+    const formLabel = field.closest('.col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-6, .col-md-12, .col-12, .mb-3')?.querySelector('.form-label');
+    if (formLabel) return formLabel.textContent.replace('*', '').trim();
+    const cell = field.closest('td');
+    if (cell) {
+        const idx = Array.from(cell.parentElement.children).indexOf(cell);
+        const th = cell.closest('table')?.querySelectorAll('thead th')[idx];
+        if (th) return th.textContent.replace('*', '').trim();
+    }
+    return field.name || 'required field';
+}
+
+document.getElementById('mgp-convert-form').addEventListener('submit', function (e) {
+    if (this.checkValidity()) return;
+    e.preventDefault();
+    const invalidField = this.querySelector(':invalid');
+    if (!invalidField) return;
+    alert(`Please fill the mandatory field: ${getInvalidFieldLabel(invalidField)}.`);
+    if (typeof invalidField.reportValidity === 'function') invalidField.reportValidity();
+    invalidField.focus();
+});
+</script>
+{% endblock %}

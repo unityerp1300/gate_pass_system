@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% block title %}Material Gate Pass{% endblock %}
+{% block page_title %}Material Gate Pass{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-box-seam me-2"></i>Material Gate Pass</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Material Gate Pass</li>
+        </ol></nav>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'material_pass:daily_report' %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-file-earmark-bar-graph me-1"></i>Daily Report
+        </a>
+        <a href="{% url 'material_pass:monthly_report' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-calendar-month me-1"></i>Monthly Report
+        </a>
+        {% if request.user.perm_mgp_write or request.user.is_superuser %}
+        <a href="{% url 'material_pass:pass_create' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>New Pass
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+
+
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="d-flex gap-2 flex-wrap align-items-center">
+            <span class="text-muted small fw-semibold">Status:</span>
+            <a href="?{% if dept_filter %}dept={{ dept_filter }}{% endif %}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">All</a>
+            <a href="?status=pending{% if dept_filter %}&dept={{ dept_filter }}{% endif %}" class="btn btn-sm {% if status_filter == 'pending' %}btn-warning{% else %}btn-outline-warning{% endif %}">Pending</a>
+            <a href="?status=approved{% if dept_filter %}&dept={{ dept_filter }}{% endif %}" class="btn btn-sm {% if status_filter == 'approved' %}btn-success{% else %}btn-outline-success{% endif %}">Approved</a>
+            <a href="?status=rejected{% if dept_filter %}&dept={{ dept_filter }}{% endif %}" class="btn btn-sm {% if status_filter == 'rejected' %}btn-danger{% else %}btn-outline-danger{% endif %}">Rejected</a>
+            <a href="?status=returned{% if dept_filter %}&dept={{ dept_filter }}{% endif %}" class="btn btn-sm {% if status_filter == 'returned' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Returned</a>
+            {% if show_dept_filter %}
+            <span class="text-muted small fw-semibold ms-3">Dept:</span>
+            <select name="dept" class="form-select form-select-sm" style="width:200px" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                {% for val,lbl in department_choices %}
+                <option value="{{ val }}" {% if dept_filter == val %}selected{% endif %}>{{ lbl }}</option>
+                {% endfor %}
+            </select>
+            {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<form method="post" action="{% url 'material_pass:bulk_action' %}" id="bulkForm">
+{% csrf_token %}
+
+<!-- Bulk action toolbar (hidden until checkbox selected) -->
+<div id="bulkToolbar" class="d-none mb-2 d-flex gap-2 align-items-center">
+    <span class="text-muted small" id="selectedCount">0 selected</span>
+    <button type="submit" name="action" value="duplicate" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-copy me-1"></i>Duplicate
+    </button>
+    <button type="submit" name="action" value="cancel" class="btn btn-sm btn-outline-warning"
+            onclick="return confirm('Cancel selected passes?')">
+        <i class="bi bi-x-circle me-1"></i>Cancel
+    </button>
+    <button type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger"
+            onclick="return confirm('Permanently delete selected passes?')">
+        <i class="bi bi-trash me-1"></i>Delete
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:36px;">
+                            <input type="checkbox" id="checkAll" class="form-check-input">
+                        </th>
+                        <th>#</th>
+                        <th>Pass No</th>
+                        <th>Employee</th>
+                        <th>Direction</th>
+                        <th>Type</th>
+                        <th>Party / Vendor</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for gp in passes %}
+                <tr>
+                    <td><input type="checkbox" name="selected_ids" value="{{ gp.pk }}" class="form-check-input row-check"></td>
+                    <td class="text-muted">{{ page_obj.start_index|add:forloop.counter0 }}</td>
+                    <td>
+                        <a href="{% url 'material_pass:pass_detail' gp.pk %}" class="fw-semibold text-decoration-none text-primary">
+                            {{ gp.pass_number }}
+                        </a>
+                    </td>
+                    <td>{{ gp.employee.employee_name }}<br><small class="text-muted">{{ gp.employee.department }}</small></td>
+                    <td>
+                        <span class="badge {% if gp.direction == 'outgoing' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}">
+                            {{ gp.get_direction_display }}
+                        </span>
+                    </td>
+                    <td>{{ gp.get_material_type_display }}</td>
+                    <td>{{ gp.party_name }}</td>
+                    <td>{{ gp.pass_date }}</td>
+                    <td><span class="badge bg-secondary">{{ gp.items.count }} item{{ gp.items.count|pluralize }}</span></td>
+                    <td>
+                        <span class="badge badge-{{ gp.status }} px-2 py-1 rounded-pill">
+                            {{ gp.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'material_pass:pass_detail' gp.pk %}" class="btn btn-sm btn-outline-secondary" title="View">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if gp.status == 'approved' or gp.status == 'returned' %}
+                            <a href="{% url 'material_pass:print_pass' gp.pk %}" class="btn btn-sm btn-outline-dark" title="Print" target="_blank">
+                                <i class="bi bi-printer"></i>
+                            </a>
+                            {% endif %}
+                            {% if can_approve and gp.status == 'pending' %}
+                            <a href="{% url 'material_pass:pass_approve' gp.pk %}" class="btn btn-sm btn-success" title="Approve/Reject">
+                                <i class="bi bi-check-circle"></i>
+                            </a>
+                            {% endif %}
+                            {% if gp.status == 'approved' and gp.is_returnable %}
+                            {% if request.user.role == 'security' or request.user.is_superuser %}
+                            <a href="{% url 'material_pass:mark_returned' gp.pk %}" class="btn btn-sm btn-outline-info" title="Mark Returned">
+                                <i class="bi bi-arrow-return-left"></i>
+                            </a>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="11" class="text-center text-muted py-4">No material gate passes found.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</form>
+
+{% include 'pagination.html' %}
+
+<script>
+const checkAll   = document.getElementById('checkAll');
+const toolbar    = document.getElementById('bulkToolbar');
+const countLabel = document.getElementById('selectedCount');
+
+function updateToolbar() {
+    const checked = document.querySelectorAll('.row-check:checked');
+    toolbar.classList.toggle('d-none', checked.length === 0);
+    countLabel.textContent = checked.length + ' selected';
+}
+checkAll.addEventListener('change', () => {
+    document.querySelectorAll('.row-check').forEach(cb => cb.checked = checkAll.checked);
+    updateToolbar();
+});
+document.querySelectorAll('.row-check').forEach(cb => cb.addEventListener('change', updateToolbar));
+</script>
+{% endblock %}

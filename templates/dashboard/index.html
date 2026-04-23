@@ -1,0 +1,739 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Summary Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card bg-gradient-blue">
+            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-value">{{ total_employees }}</div>
+            <div class="stat-label">Active Employees</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card bg-gradient-orange">
+            <div class="stat-icon"><i class="bi bi-person-walking"></i></div>
+            <div class="stat-value">{{ igp_today }}</div>
+            <div class="stat-label">IGP Today</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card bg-gradient-teal">
+            <div class="stat-icon"><i class="bi bi-person-badge-fill"></i></div>
+            <div class="stat-value">{{ vgp_today }}</div>
+            <div class="stat-label">Visitors Today</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card bg-gradient-red">
+            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-value">{{ igp_pending }}</div>
+            <div class="stat-label">IGP Pending</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card bg-gradient-purple">
+            <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+            <div class="stat-value">{{ vgp_pending }}</div>
+            <div class="stat-label">VGP Pending</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card bg-gradient-green">
+            <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="stat-value">{{ igp_approved|add:vgp_approved }}</div>
+            <div class="stat-label">Approved Today</div>
+        </div>
+    </div>
+</div>
+
+<!-- Section Tabs -->
+<ul class="nav nav-tabs mb-4" id="dashTabs" role="tablist" style="border-bottom:2px solid var(--border);">
+    <li class="nav-item">
+        <button class="nav-link active fw-600" id="igp-tab" data-bs-toggle="tab" data-bs-target="#tab-igp" type="button" role="tab"
+            style="font-weight:600;font-size:13.5px;padding:10px 22px;">
+            <i class="bi bi-person-walking me-2 text-primary"></i>Internal Gate Pass
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link fw-600" id="vgp-tab" data-bs-toggle="tab" data-bs-target="#tab-vgp" type="button" role="tab"
+            style="font-weight:600;font-size:13.5px;padding:10px 22px;">
+            <i class="bi bi-person-badge-fill me-2 text-success"></i>Visitor Gate Pass
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link fw-600" id="mgp-tab" data-bs-toggle="tab" data-bs-target="#tab-mgp" type="button" role="tab"
+            style="font-weight:600;font-size:13.5px;padding:10px 22px;">
+            <i class="bi bi-box-seam me-2 text-danger"></i>Material Gate Pass
+            {% if mgp_pending %}<span class="badge bg-warning text-dark ms-1" style="font-size:10px;">{{ mgp_pending }}</span>{% endif %}
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link fw-600" id="hd-tab" data-bs-toggle="tab" data-bs-target="#tab-hd" type="button" role="tab"
+            style="font-weight:600;font-size:13.5px;padding:10px 22px;">
+            <i class="bi bi-headset me-2 text-warning"></i>Help Desk
+            {% if hd_open %}<span class="badge bg-danger ms-1" style="font-size:10px;">{{ hd_open }}</span>{% endif %}
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link fw-600" id="grv-tab" data-bs-toggle="tab" data-bs-target="#tab-grv" type="button" role="tab"
+            style="font-weight:600;font-size:13.5px;padding:10px 22px;">
+            <i class="bi bi-megaphone-fill me-2 text-danger"></i>Grievance
+            {% if grv_open %}<span class="badge bg-danger ms-1" style="font-size:10px;">{{ grv_open }}</span>{% endif %}
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="dashTabContent">
+
+    <!-- ===== IGP TAB ===== -->
+    <div class="tab-pane fade show active" id="tab-igp" role="tabpanel">
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-gradient-orange">
+                    <div class="stat-icon"><i class="bi bi-person-walking"></i></div>
+                    <div class="stat-value">{{ igp_today }}</div>
+                    <div class="stat-label">IGP Today</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-gradient-red">
+                    <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+                    <div class="stat-value">{{ igp_pending }}</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-gradient-green">
+                    <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+                    <div class="stat-value">{{ igp_approved }}</div>
+                    <div class="stat-label">Approved</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-gradient-blue">
+                    <div class="stat-icon"><i class="bi bi-bar-chart-fill"></i></div>
+                    <div class="stat-value">{{ igp_chart_data|length }}</div>
+                    <div class="stat-label">Months Tracked</div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-3 mb-4">
+            <div class="col-md-8">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-bar-chart-fill me-2 text-primary"></i>IGP Monthly Trend</span>
+                        <a href="{% url 'internal_pass:pass_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                    <div class="card-body"><canvas id="igpChart" height="180"></canvas></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>IGP Status</div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <canvas id="igpPie" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-clock-history me-2"></i>Recent IGP</span>
+                        <a href="{% url 'internal_pass:pass_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead><tr><th>Pass No</th><th>Employee</th><th>Department</th><th>Date</th><th>Status</th></tr></thead>
+                                <tbody>
+                                {% for gp in recent_igp %}
+                                <tr>
+                                    <td><a href="{% url 'internal_pass:pass_detail' gp.pk %}" class="fw-semibold text-decoration-none">{{ gp.pass_number }}</a></td>
+                                    <td>{{ gp.employee.employee_name }}</td>
+                                    <td><small class="text-muted">{{ gp.employee.department }}</small></td>
+                                    <td><small>{{ gp.out_date|date:"d M Y" }}</small></td>
+                                    <td><span class="badge badge-{{ gp.status }} px-2 py-1 rounded-pill" style="font-size:10px;">{{ gp.get_status_display }}</span></td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted py-3">No records</td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header"><i class="bi bi-lightning-fill me-2 text-warning"></i>Quick Actions</div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'internal_pass:pass_create' %}" class="btn btn-primary d-flex align-items-center gap-2">
+                                <i class="bi bi-plus-circle"></i> New IGP
+                            </a>
+                            <a href="{% url 'internal_pass:daily_report' %}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+                                <i class="bi bi-file-earmark-bar-graph"></i> IGP Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== VGP TAB ===== -->
+    <div class="tab-pane fade" id="tab-vgp" role="tabpanel">
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-gradient-teal">
+                    <div class="stat-icon"><i class="bi bi-person-badge-fill"></i></div>
+                    <div class="stat-value">{{ vgp_today }}</div>
+                    <div class="stat-label">Visitors Today</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-gradient-purple">
+                    <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+                    <div class="stat-value">{{ vgp_pending }}</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-gradient-green">
+                    <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+                    <div class="stat-value">{{ vgp_approved }}</div>
+                    <div class="stat-label">Approved</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-gradient-blue">
+                    <div class="stat-icon"><i class="bi bi-bar-chart-fill"></i></div>
+                    <div class="stat-value">{{ vgp_chart_data|length }}</div>
+                    <div class="stat-label">Months Tracked</div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-3 mb-4">
+            <div class="col-md-8">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-bar-chart-fill me-2 text-success"></i>VGP Monthly Trend</span>
+                        <a href="{% url 'visitor_pass:pass_list' %}" class="btn btn-sm btn-outline-success">View All</a>
+                    </div>
+                    <div class="card-body"><canvas id="vgpChart" height="180"></canvas></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>VGP Status</div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <canvas id="vgpPie" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-clock-history me-2"></i>Recent VGP</span>
+                        <a href="{% url 'visitor_pass:pass_list' %}" class="btn btn-sm btn-outline-success">View All</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead><tr><th>Pass No</th><th>Visitor</th><th>Purpose</th><th>Date</th><th>Status</th></tr></thead>
+                                <tbody>
+                                {% for vgp in recent_vgp %}
+                                <tr>
+                                    <td><a href="{% url 'visitor_pass:pass_detail' vgp.pk %}" class="fw-semibold text-decoration-none">{{ vgp.pass_number }}</a></td>
+                                    <td>{{ vgp.visitor_name }}</td>
+                                    <td><small class="text-muted">{{ vgp.purpose|truncatechars:25 }}</small></td>
+                                    <td><small>{{ vgp.visit_date|date:"d M Y" }}</small></td>
+                                    <td><span class="badge badge-{{ vgp.status }} px-2 py-1 rounded-pill" style="font-size:10px;">{{ vgp.get_status_display }}</span></td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted py-3">No records</td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header"><i class="bi bi-lightning-fill me-2 text-warning"></i>Quick Actions</div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'visitor_pass:pass_create' %}" class="btn btn-success d-flex align-items-center gap-2">
+                                <i class="bi bi-plus-circle"></i> New VGP
+                            </a>
+                            <a href="{% url 'visitor_pass:daily_report' %}" class="btn btn-outline-success d-flex align-items-center gap-2">
+                                <i class="bi bi-file-earmark-person"></i> VGP Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MGP TAB ===== -->
+    <div class="tab-pane fade" id="tab-mgp" role="tabpanel">
+        <!-- Stat Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-2">
+                <div class="stat-card bg-gradient-blue">
+                    <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
+                    <div class="stat-value">{{ mgp_today }}</div>
+                    <div class="stat-label">MGP Today</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-2">
+                <div class="stat-card bg-gradient-red">
+                    <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+                    <div class="stat-value">{{ mgp_pending }}</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-2">
+                <div class="stat-card bg-gradient-green">
+                    <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+                    <div class="stat-value">{{ mgp_approved }}</div>
+                    <div class="stat-label">Approved</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-2">
+                <div class="stat-card bg-gradient-teal">
+                    <div class="stat-icon"><i class="bi bi-arrow-return-left"></i></div>
+                    <div class="stat-value">{{ mgp_returned }}</div>
+                    <div class="stat-label">Returned</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-2">
+                <div class="stat-card bg-gradient-orange">
+                    <div class="stat-icon"><i class="bi bi-recycle"></i></div>
+                    <div class="stat-value">{{ mgp_returnable }}</div>
+                    <div class="stat-label">Returnable</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-2">
+                <div class="stat-card bg-gradient-purple">
+                    <div class="stat-icon"><i class="bi bi-box-arrow-right"></i></div>
+                    <div class="stat-value">{{ mgp_non_ret }}</div>
+                    <div class="stat-label">Non-Returnable</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-5">
+                <div class="card h-100">
+                    <div class="card-header"><i class="bi bi-bar-chart-fill me-2 text-danger"></i>MGP Monthly Trend</div>
+                    <div class="card-body"><canvas id="mgpChart" height="200"></canvas></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>Status Breakdown</div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <canvas id="mgpStatusPie" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100">
+                    <div class="card-header"><i class="bi bi-pie-chart me-2"></i>Type Split</div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <canvas id="mgpTypePie" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent MGP + Quick Actions -->
+        <div class="row g-3">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-clock-history me-2"></i>Recent Material Gate Passes</span>
+                        <a href="{% url 'material_pass:pass_list' %}" class="btn btn-sm btn-outline-danger">View All</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead><tr><th>Pass No</th><th>Employee</th><th>Party</th><th>Type</th><th>Date</th><th>Status</th></tr></thead>
+                                <tbody>
+                                {% for gp in recent_mgp %}
+                                <tr>
+                                    <td><a href="{% url 'material_pass:pass_detail' gp.pk %}" class="fw-semibold text-decoration-none">{{ gp.pass_number }}</a></td>
+                                    <td>{{ gp.employee.employee_name }}</td>
+                                    <td><small class="text-muted">{{ gp.party_name|truncatechars:20 }}</small></td>
+                                    <td>
+                                        <span class="badge rounded-pill {% if gp.is_returnable %}bg-warning text-dark{% else %}bg-secondary{% endif %}" style="font-size:10px;">
+                                            {{ gp.get_type_label }}
+                                        </span>
+                                    </td>
+                                    <td><small>{{ gp.pass_date|date:"d M Y" }}</small></td>
+                                    <td><span class="badge badge-{{ gp.status }} px-2 py-1 rounded-pill" style="font-size:10px;">{{ gp.get_status_display }}</span></td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="6" class="text-center text-muted py-3">No records</td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header"><i class="bi bi-lightning-fill me-2 text-warning"></i>Quick Actions</div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'material_pass:pass_create' %}" class="btn btn-danger d-flex align-items-center gap-2">
+                                <i class="bi bi-plus-circle"></i> New Material Gate Pass
+                            </a>
+                            <a href="{% url 'material_pass:pass_list' %}?status=pending" class="btn btn-outline-warning d-flex align-items-center gap-2">
+                                <i class="bi bi-hourglass-split"></i> Pending Approvals
+                            </a>
+                            <a href="{% url 'material_pass:daily_report' %}" class="btn btn-outline-danger d-flex align-items-center gap-2">
+                                <i class="bi bi-file-earmark-bar-graph"></i> Daily Report
+                            </a>
+                            <a href="{% url 'material_pass:monthly_report' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                                <i class="bi bi-calendar-month"></i> Monthly Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== HD TAB ===== -->
+    <div class="tab-pane fade" id="tab-hd" role="tabpanel">
+        <!-- Real-time stat cards -->
+        <div class="row g-3 mb-4" id="hd-stats">
+            <div class="col-6 col-md-3">
+                <div class="stat-card" style="background:linear-gradient(135deg,#0e6655,#1abc9c);">
+                    <div class="stat-icon"><i class="bi bi-folder2-open"></i></div>
+                    <div class="stat-value" id="rt-open">{{ hd_open }}</div>
+                    <div class="stat-label">Open Tickets</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card" style="background:linear-gradient(135deg,#f0a500,#e67e22);">
+                    <div class="stat-icon"><i class="bi bi-arrow-repeat"></i></div>
+                    <div class="stat-value" id="rt-inprogress">{{ hd_in_progress }}</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card" style="background:linear-gradient(135deg,#c0392b,#e74c3c);">
+                    <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                    <div class="stat-value" id="rt-critical">{{ hd_critical }}</div>
+                    <div class="stat-label">Critical Open</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card" style="background:linear-gradient(135deg,#27ae60,#2ecc71);">
+                    <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+                    <div class="stat-value" id="rt-resolved">{{ hd_resolved }}</div>
+                    <div class="stat-label">Resolved</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live indicator -->
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="badge bg-success" style="font-size:11px;"><i class="bi bi-circle-fill me-1" style="font-size:8px;"></i>Live</span>
+            <small class="text-muted">Auto-refreshes every 30 seconds &mdash; Last updated: <span id="hd-last-updated">just now</span></small>
+            <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="fetchHDStats()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+            </button>
+        </div>
+
+        <div class="row g-3">
+            <!-- Recent Tickets Table -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-clock-history me-2"></i>Recent Tickets</span>
+                        <a href="{% url 'helpdesk:ticket_list' %}" class="btn btn-sm btn-outline-secondary">View All</a>
+                    </div>
+                    <div class="card-body p-0" id="hd-tickets-body">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead><tr><th>Ticket</th><th>Title</th><th>Category</th><th>Priority</th><th>Status</th><th>Date</th></tr></thead>
+                                <tbody id="hd-tickets-tbody">
+                                {% for t in recent_tickets %}
+                                <tr>
+                                    <td><a href="{% url 'helpdesk:ticket_detail' t.pk %}" class="fw-semibold text-decoration-none text-primary">{{ t.ticket_number }}</a></td>
+                                    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.title }}</td>
+                                    <td><small>{{ t.get_category_display }}</small></td>
+                                    <td>
+                                        <span class="badge rounded-pill" style="font-size:10px;
+                                            {% if t.priority == 'critical' %}background:#f8d7da;color:#842029;
+                                            {% elif t.priority == 'high' %}background:#fff3cd;color:#856404;
+                                            {% elif t.priority == 'medium' %}background:#d1e7dd;color:#0f5132;
+                                            {% else %}background:#e2e3e5;color:#383d41;{% endif %}">
+                                            {{ t.get_priority_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge rounded-pill" style="font-size:10px;
+                                            {% if t.status == 'open' %}background:#cfe2ff;color:#084298;
+                                            {% elif t.status == 'in_progress' %}background:#fff3cd;color:#856404;
+                                            {% elif t.status == 'resolved' %}background:#d1e7dd;color:#0f5132;
+                                            {% elif t.status == 'closed' %}background:#f8f9fa;color:#6c757d;
+                                            {% else %}background:#e2e3e5;color:#383d41;{% endif %}">
+                                            {{ t.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td><small>{{ t.created_at|date:"d M Y" }}</small></td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="6" class="text-center text-muted py-3">No tickets</td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HD Quick Actions + Info -->
+            <div class="col-md-4">
+                <div class="card mb-3">
+                    <div class="card-header"><i class="bi bi-lightning-fill me-2 text-warning"></i>Quick Actions</div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'helpdesk:ticket_create' %}" class="btn btn-primary d-flex align-items-center gap-2">
+                                <i class="bi bi-plus-circle"></i> Raise New Ticket
+                            </a>
+                            <a href="{% url 'helpdesk:ticket_list' %}?status=open" class="btn btn-outline-danger d-flex align-items-center gap-2">
+                                <i class="bi bi-exclamation-circle"></i> View Open Tickets
+                            </a>
+                            <a href="{% url 'helpdesk:ticket_list' %}?priority=critical" class="btn btn-outline-warning d-flex align-items-center gap-2">
+                                <i class="bi bi-exclamation-triangle"></i> Critical Tickets
+                            </a>
+                            <a href="{% url 'helpdesk:ticket_list' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                                <i class="bi bi-ticket-detailed"></i> All Tickets
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><i class="bi bi-info-circle me-2"></i>HD Summary</div>
+                    <div class="card-body p-0">
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                            <span style="font-size:13px;">Open</span>
+                            <span class="badge" style="background:#cfe2ff;color:#084298;" id="sum-open">{{ hd_open }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                            <span style="font-size:13px;">In Progress</span>
+                            <span class="badge" style="background:#fff3cd;color:#856404;" id="sum-inprogress">{{ hd_in_progress }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                            <span style="font-size:13px;">Critical</span>
+                            <span class="badge bg-danger" id="sum-critical">{{ hd_critical }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2">
+                            <span style="font-size:13px;">Resolved</span>
+                            <span class="badge" style="background:#d1e7dd;color:#0f5132;" id="sum-resolved">{{ hd_resolved }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== GRIEVANCE TAB ===== -->
+    <div class="tab-pane fade" id="tab-grv" role="tabpanel">
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-gradient-blue"><div class="stat-icon"><i class="bi bi-megaphone"></i></div><div class="stat-value">{{ grv_open }}</div><div class="stat-label">Open</div></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-gradient-purple"><div class="stat-icon"><i class="bi bi-search"></i></div><div class="stat-value">{{ grv_review }}</div><div class="stat-label">Under Review</div></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-gradient-green"><div class="stat-icon"><i class="bi bi-check-circle"></i></div><div class="stat-value">{{ grv_resolved }}</div><div class="stat-label">Resolved</div></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card bg-gradient-red"><div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div><div class="stat-value">{{ grv_critical }}</div><div class="stat-label">Critical Open</div></div>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-clock-history me-2"></i>Recent Grievances</span>
+                        <a href="{% url 'grievance:list' %}" class="btn btn-sm btn-outline-danger">View All</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead><tr><th>No</th><th>Subject</th><th>Category</th><th>Priority</th><th>Status</th><th>Date</th></tr></thead>
+                                <tbody>
+                                {% for g in recent_grv %}
+                                <tr>
+                                    <td><a href="{% url 'grievance:detail' g.pk %}" class="fw-semibold text-decoration-none">{{ g.grievance_no }}</a></td>
+                                    <td>{{ g.subject|truncatechars:35 }}</td>
+                                    <td><small>{{ g.get_category_display }}</small></td>
+                                    <td><span class="badge {% if g.priority == 'critical' %}bg-danger{% elif g.priority == 'high' %}bg-warning text-dark{% else %}bg-secondary{% endif %}" style="font-size:10px;">{{ g.get_priority_display }}</span></td>
+                                    <td><span class="badge {% if g.status == 'open' %}badge-pending{% elif g.status == 'under_review' %}bg-info text-dark{% elif g.status == 'resolved' %}badge-approved{% else %}bg-secondary{% endif %}" style="font-size:10px;">{{ g.get_status_display }}</span></td>
+                                    <td><small>{{ g.created_at|date:"d M Y" }}</small></td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="6" class="text-center text-muted py-3">No grievances</td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header"><i class="bi bi-lightning-fill me-2 text-warning"></i>Quick Actions</div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'grievance:create' %}" class="btn btn-danger d-flex align-items-center gap-2"><i class="bi bi-plus-circle"></i> Raise Grievance</a>
+                            <a href="{% url 'grievance:list' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2"><i class="bi bi-list-ul"></i> All Grievances</a>
+                            <a href="{% url 'grievance:dashboard' %}" class="btn btn-outline-primary d-flex align-items-center gap-2"><i class="bi bi-speedometer"></i> GRV Dashboard</a>
+                            <a href="{% url 'grievance:report' %}" class="btn btn-outline-success d-flex align-items-center gap-2"><i class="bi bi-file-earmark-bar-graph"></i> GRV Reports</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const chartDefaults = { responsive: true, plugins: { legend: { display: false } } };
+const colors6 = ['#2A2A86','#f0a500','#27ae60','#e74c3c','#9b59b6','#1abc9c'];
+
+// MGP Charts
+new Chart(document.getElementById('mgpChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ mgp_chart_labels|safe }},
+        datasets: [{ label: 'MGP', data: {{ mgp_chart_data|safe }},
+            backgroundColor: 'rgba(220,53,69,0.8)', borderRadius: 6 }]
+    },
+    options: { ...chartDefaults, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+
+new Chart(document.getElementById('mgpStatusPie'), {
+    type: 'doughnut',
+    data: {
+        labels: {{ mgp_status_labels|safe }},
+        datasets: [{ data: {{ mgp_status_data|safe }}, backgroundColor: colors6, borderWidth: 2 }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+});
+
+new Chart(document.getElementById('mgpTypePie'), {
+    type: 'doughnut',
+    data: {
+        labels: {{ mgp_type_labels|safe }},
+        datasets: [{ data: {{ mgp_type_data|safe }}, backgroundColor: ['#f0a500','#6c757d'], borderWidth: 2 }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+});
+
+new Chart(document.getElementById('igpChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ igp_chart_labels|safe }},
+        datasets: [{ label: 'IGP', data: {{ igp_chart_data|safe }},
+            backgroundColor: 'rgba(42,42,134,0.8)', borderRadius: 6 }]
+    },
+    options: { ...chartDefaults, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+
+new Chart(document.getElementById('vgpChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ vgp_chart_labels|safe }},
+        datasets: [{ label: 'VGP', data: {{ vgp_chart_data|safe }},
+            backgroundColor: 'rgba(39,174,96,0.8)', borderRadius: 6 }]
+    },
+    options: { ...chartDefaults, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+
+new Chart(document.getElementById('igpPie'), {
+    type: 'doughnut',
+    data: {
+        labels: {{ igp_status_labels|safe }},
+        datasets: [{ data: {{ igp_status_data|safe }}, backgroundColor: colors6, borderWidth: 2 }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+});
+
+new Chart(document.getElementById('vgpPie'), {
+    type: 'doughnut',
+    data: {
+        labels: {{ vgp_status_labels|safe }},
+        datasets: [{ data: {{ vgp_status_data|safe }}, backgroundColor: colors6, borderWidth: 2 }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+});
+
+// ── HD Real-time fetching ──────────────────────────────────────────────────
+function fetchHDStats() {
+    fetch('{% url "dashboard:hd_stats" %}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('rt-open').textContent       = data.open;
+            document.getElementById('rt-inprogress').textContent = data.in_progress;
+            document.getElementById('rt-critical').textContent   = data.critical;
+            document.getElementById('rt-resolved').textContent   = data.resolved;
+            document.getElementById('sum-open').textContent      = data.open;
+            document.getElementById('sum-inprogress').textContent= data.in_progress;
+            document.getElementById('sum-critical').textContent  = data.critical;
+            document.getElementById('sum-resolved').textContent  = data.resolved;
+
+            // Update badge in tab
+            const tabBadge = document.querySelector('#hd-tab .badge');
+            if (data.open > 0) {
+                if (tabBadge) tabBadge.textContent = data.open;
+                else document.getElementById('hd-tab').insertAdjacentHTML('beforeend',
+                    `<span class="badge bg-danger ms-1" style="font-size:10px;">${data.open}</span>`);
+            } else if (tabBadge) tabBadge.remove();
+
+            // Update tickets table
+            if (data.tickets_html) {
+                document.getElementById('hd-tickets-tbody').innerHTML = data.tickets_html;
+            }
+
+            const now = new Date();
+            document.getElementById('hd-last-updated').textContent =
+                now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        })
+        .catch(() => {});
+}
+
+// Auto-refresh every 30 seconds when HD tab is visible
+setInterval(() => {
+    if (document.getElementById('tab-hd').classList.contains('active')) {
+        fetchHDStats();
+    }
+}, 30000);
+
+// Fetch immediately when HD tab is clicked
+document.getElementById('hd-tab').addEventListener('shown.bs.tab', fetchHDStats);
+</script>
+{% endblock %}

@@ -1,0 +1,802 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ERP System{% endblock %} | Unity Cement</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2A2A86;
+            --primary-light: #3C3CA0;
+            --accent: #f0a500;
+            --accent-light: #ffc107;
+            /* Unity core-values palette */
+            --unity-orange: #f2991b;
+            --unity-pink: #e25572;
+            --unity-purple: #7b4bb3;
+            --unity-green: #22a67a;
+            --unity-blue: #2f8ed6;
+            --sidebar-width: 260px;
+            --bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+            --text-muted: #718096;
+            --border: #e2e8f0;
+            --success: #38a169;
+            --danger: #e53e3e;
+            --warning: #d69e2e;
+            --info: #3182ce;
+            --shadow-1: 0 2px 12px rgba(0,0,0,0.06);
+            --shadow-2: 0 6px 20px rgba(0,0,0,0.10);
+        }
+        html[data-theme="dark"] {
+            color-scheme: dark;
+            --bg: #0b1220;
+            --card-bg: #0f1a2b;
+            --text: #e6edf7;
+            --text-muted: rgba(230,237,247,0.70);
+            --border: rgba(255,255,255,0.12);
+            --shadow-1: 0 2px 12px rgba(0,0,0,0.45);
+            --shadow-2: 0 10px 28px rgba(0,0,0,0.55);
+        }
+        * { font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--primary) 0%, #1F1F6B 100%);
+            min-height: 100vh;
+            position: fixed;
+            top: 0; left: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+        }
+        /* Fully hidden sidebar (desktop) */
+        body.sidebar-hidden .sidebar { transform: translateX(-100%); }
+        body.sidebar-hidden .topbar,
+        body.sidebar-hidden .main-content { margin-left: 0; }
+
+        .sidebar-toggle-btn {
+            width: 36px; height: 36px;
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 10px;
+        }
+        .sidebar-brand {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .sidebar-brand img {
+            height: 42px;
+            width: auto;
+            object-fit: contain;
+            filter: brightness(0) invert(1);
+        }
+        .sidebar-brand .brand-sub {
+            color: rgba(255,255,255,0.5);
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .sidebar-nav { padding: 10px 0; overflow-y: auto; max-height: calc(100vh - 80px); }
+        .sidebar-nav::-webkit-scrollbar { width: 4px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+        /* Collapsible menu groups */
+        .nav-group-btn {
+            color: rgba(255,255,255,0.85);
+            padding: 11px 20px;
+            display: flex; align-items: center; gap: 12px;
+            font-size: 13px; font-weight: 700;
+            cursor: pointer; border: none; background: none; width: 100%;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            transition: background 0.2s;
+        }
+        .nav-group-btn:hover { background: rgba(255,255,255,0.08); }
+        .nav-group-btn i.group-icon { font-size: 16px; width: 20px; text-align: center; }
+        .nav-group-btn .chevron { margin-left: auto; font-size: 11px; transition: transform 0.25s; }
+        .nav-group-btn.collapsed .chevron { transform: rotate(-90deg); }
+        .nav-group-btn.active-group { background: rgba(240,165,0,0.15); border-left: 3px solid var(--accent); }
+        .nav-submenu { padding-left: 0; }
+        .nav-submenu .nav-link {
+            padding: 8px 20px 8px 48px;
+            font-size: 13px;
+        }
+        .nav-section-title {
+            color: rgba(255,255,255,0.35);
+            font-size: 10px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 1.5px;
+            padding: 12px 20px 6px;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.7);
+            padding: 10px 20px;
+            border-radius: 0;
+            display: flex; align-items: center; gap: 12px;
+            font-size: 13.5px; font-weight: 500;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.1);
+        }
+        .sidebar .nav-link.active::before {
+            content: '';
+            position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; background: var(--accent);
+            border-radius: 0 3px 3px 0;
+        }
+        .sidebar .nav-link i { font-size: 16px; width: 20px; text-align: center; }
+        .sidebar .nav-link .badge { margin-left: auto; font-size: 10px; }
+
+        /* Topbar */
+        .topbar {
+            margin-left: var(--sidebar-width);
+            background: var(--card-bg);
+            height: 64px;
+            display: flex; align-items: center;
+            padding: 0 24px;
+            box-shadow: 0 1px 10px rgba(0,0,0,0.06);
+            position: sticky; top: 0; z-index: 999;
+            gap: 16px;
+        }
+        .topbar .page-title { font-size: 18px; font-weight: 600; color: var(--primary); flex: 1; }
+        .topbar .user-avatar {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 600; font-size: 14px;
+        }
+
+        /* Main content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 24px;
+            min-height: calc(100vh - 64px);
+        }
+
+        /* Cards */
+        .card {
+            border: none;
+            border-radius: 12px;
+            background: var(--card-bg);
+            box-shadow: var(--shadow-1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 20px;
+            font-weight: 600; font-size: 14px;
+        }
+
+        /* Stat cards */
+        .stat-card {
+            border-radius: 14px;
+            padding: 20px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            right: -20px; top: -20px;
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+        }
+        .stat-card .stat-icon {
+            width: 48px; height: 48px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; margin-bottom: 12px;
+        }
+        .stat-card .stat-value { font-size: 32px; font-weight: 700; line-height: 1; }
+        .stat-card .stat-label { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+        .bg-gradient-blue { background: linear-gradient(135deg, #2A2A86, #3C3CA0); }
+        .bg-gradient-orange { background: linear-gradient(135deg, #f0a500, #e67e22); }
+        .bg-gradient-green { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+        .bg-gradient-red { background: linear-gradient(135deg, #c0392b, #e74c3c); }
+        .bg-gradient-purple { background: linear-gradient(135deg, #6c3483, #9b59b6); }
+        .bg-gradient-teal { background: linear-gradient(135deg, #0e6655, #1abc9c); }
+
+        /* Buttons */
+        .btn-primary { background: var(--primary); border-color: var(--primary); }
+        .btn-primary:hover { background: var(--primary-light); border-color: var(--primary-light); }
+        .btn-accent { background: var(--accent); border-color: var(--accent); color: white; }
+        .btn-accent:hover { background: #d4920a; color: white; }
+
+        /* Tables */
+        .table { font-size: 13.5px; }
+        .table thead th {
+            background: var(--primary);
+            color: white; font-weight: 600;
+            border: none; padding: 12px 14px;
+            font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .table tbody tr:hover { background: #f7fafc; }
+        .table td { padding: 11px 14px; vertical-align: middle; border-color: var(--border); }
+        html[data-theme="dark"] .table tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+        /* Badges */
+        .badge-pending { background: #fff3cd; color: #856404; }
+        .badge-approved { background: #d1e7dd; color: #0f5132; }
+        .badge-rejected { background: #f8d7da; color: #842029; }
+        .badge-returned, .badge-checked_out { background: #cff4fc; color: #055160; }
+
+        /* Forms */
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1.5px solid var(--border);
+            font-size: 13.5px;
+            padding: 9px 12px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(42,42,134,0.1);
+        }
+        .form-label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+
+        /* Alerts */
+        .alert { border-radius: 10px; border: none; font-size: 13.5px; }
+
+        /* Breadcrumb */
+        .breadcrumb { font-size: 12.5px; }
+        .breadcrumb-item.active { color: var(--text-muted); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.show { transform: translateX(0); }
+            .topbar, .main-content { margin-left: 0; }
+        }
+
+        /* Session timer chip */
+        .session-timer {
+            display: flex; align-items: center; gap: 6px;
+            background: #f0f4f8; border: 1.5px solid #e2e8f0;
+            border-radius: 20px; padding: 4px 12px;
+            font-size: 12px; font-weight: 600; color: var(--primary);
+            transition: all 0.3s;
+        }
+        html[data-theme="dark"] .session-timer { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+        .session-timer.warn  { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .session-timer.danger{ background: #f8d7da; border-color: #dc3545; color: #842029; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+        .page-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .page-header h4 { font-weight: 700; color: var(--primary); margin: 0; }
+    </style>
+    {% block extra_css %}{% endblock %}
+    <script>
+        (function () {
+            const KEY = 'uiTheme';
+            const saved = localStorage.getItem(KEY) || 'system';
+            const mql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+            function resolve(mode) {
+                if (mode === 'dark' || mode === 'light') return mode;
+                return (mql && mql.matches) ? 'dark' : 'light';
+            }
+
+            function apply(mode) {
+                const resolved = resolve(mode);
+                document.documentElement.setAttribute('data-theme', resolved === 'dark' ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme-mode', mode);
+            }
+
+            window.__setTheme = function (mode) {
+                localStorage.setItem(KEY, mode);
+                apply(mode);
+            };
+            window.__getThemeMode = function () { return localStorage.getItem(KEY) || 'system'; };
+
+            apply(saved);
+            if (mql) {
+                mql.addEventListener?.('change', () => {
+                    if ((localStorage.getItem(KEY) || 'system') === 'system') apply('system');
+                });
+            }
+        })();
+    </script>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <img src="{% static 'images/Unity_Logo_Horizontal.png' %}" alt="Unity Cement Logo">
+            <span class="brand-sub">ERP System</span>
+        </div>
+        <div class="sidebar-nav">
+
+            <!-- Dashboard -->
+            <a href="{% url 'dashboard:index' %}" class="nav-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}" style="font-weight:700;font-size:13px;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,0.06);">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+
+            <!-- 1. ACCOUNTS -->
+            {% if request.user.perm_accounts_view or request.user.is_superuser %}
+            <button class="nav-group-btn {% if request.resolver_match.app_name == 'accounts' and 'employee' in request.path %}active-group{% endif %}"
+                    data-bs-toggle="collapse" data-bs-target="#menu-accounts"
+                    aria-expanded="{% if request.resolver_match.app_name == 'accounts' and 'employee' in request.path %}true{% else %}false{% endif %}">
+                <i class="bi bi-people-fill group-icon"></i> Accounts
+                <i class="bi bi-chevron-down chevron"></i>
+            </button>
+            <div class="collapse nav-submenu {% if request.resolver_match.app_name == 'accounts' and 'employee' in request.path %}show{% endif %}" id="menu-accounts">
+                <a href="{% url 'accounts:employee_list' %}" class="nav-link {% if request.resolver_match.url_name == 'employee_list' %}active{% endif %}">
+                    <i class="bi bi-list-ul"></i> Employee List
+                </a>
+                {% if request.user.perm_accounts_write or request.user.is_superuser %}
+                <a href="{% url 'accounts:employee_create' %}" class="nav-link {% if request.resolver_match.url_name == 'employee_create' %}active{% endif %}">
+                    <i class="bi bi-person-plus"></i> Add Employee
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- 2. GATE PASS -->
+            {% if request.user.perm_igp_view or request.user.perm_vgp_view or request.user.perm_mgp_view or request.user.is_superuser %}
+            <button class="nav-group-btn {% if request.resolver_match.app_name == 'internal_pass' or request.resolver_match.app_name == 'visitor_pass' or request.resolver_match.app_name == 'material_pass' %}active-group{% endif %}"
+                    data-bs-toggle="collapse" data-bs-target="#menu-gatepass"
+                    aria-expanded="{% if request.resolver_match.app_name == 'internal_pass' or request.resolver_match.app_name == 'visitor_pass' or request.resolver_match.app_name == 'material_pass' %}true{% else %}false{% endif %}">
+                <i class="bi bi-card-checklist group-icon"></i> Gate Pass
+                <i class="bi bi-chevron-down chevron"></i>
+            </button>
+            <div class="collapse nav-submenu {% if request.resolver_match.app_name == 'internal_pass' or request.resolver_match.app_name == 'visitor_pass' or request.resolver_match.app_name == 'material_pass' %}show{% endif %}" id="menu-gatepass">
+                {% if request.user.perm_igp_view or request.user.is_superuser %}
+                <a href="{% url 'internal_pass:pass_list' %}" class="nav-link {% if request.resolver_match.app_name == 'internal_pass' and 'report' not in request.path %}active{% endif %}">
+                    <i class="bi bi-person-walking"></i> Internal Gate Pass
+                </a>
+                {% endif %}
+                {% if request.user.perm_vgp_view or request.user.is_superuser %}
+                <a href="{% url 'visitor_pass:pass_list' %}" class="nav-link {% if request.resolver_match.app_name == 'visitor_pass' and 'report' not in request.path %}active{% endif %}">
+                    <i class="bi bi-person-badge-fill"></i> Visitor Gate Pass
+                </a>
+                {% endif %}
+                {% if request.user.perm_mgp_view or request.user.is_superuser %}
+                <a href="{% url 'material_pass:pass_list' %}" class="nav-link {% if request.resolver_match.app_name == 'material_pass' and 'report' not in request.path and 'requests' not in request.path %}active{% endif %}">
+                    <i class="bi bi-box-seam"></i> Material Gate Pass
+                </a>
+                <a href="{% url 'material_pass:request_list' %}" class="nav-link {% if request.resolver_match.app_name == 'material_pass' and 'requests' in request.path %}active{% endif %}">
+                    <i class="bi bi-file-earmark-text"></i> MGP Requests
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- 3. IT HELP DESK -->
+            {% if request.user.perm_helpdesk_view or request.user.is_superuser %}
+            <button class="nav-group-btn {% if request.resolver_match.app_name == 'helpdesk' %}active-group{% endif %}"
+                    data-bs-toggle="collapse" data-bs-target="#menu-helpdesk"
+                    aria-expanded="{% if request.resolver_match.app_name == 'helpdesk' %}true{% else %}false{% endif %}">
+                <i class="bi bi-headset group-icon"></i> IT Help Desk
+                {% if helpdesk_open_count %}<span class="badge bg-danger" style="font-size:10px;margin-left:4px;">{{ helpdesk_open_count }}</span>{% endif %}
+                <i class="bi bi-chevron-down chevron"></i>
+            </button>
+            <div class="collapse nav-submenu {% if request.resolver_match.app_name == 'helpdesk' %}show{% endif %}" id="menu-helpdesk">
+                <a href="{% url 'helpdesk:ticket_list' %}" class="nav-link {% if request.resolver_match.url_name == 'ticket_list' %}active{% endif %}">
+                    <i class="bi bi-ticket-detailed"></i> All Tickets
+                </a>
+                {% if request.user.perm_helpdesk_write or request.user.is_superuser %}
+                <a href="{% url 'helpdesk:ticket_create' %}" class="nav-link {% if request.resolver_match.url_name == 'ticket_create' %}active{% endif %}">
+                    <i class="bi bi-plus-circle"></i> Raise Ticket
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- 4. GRIEVANCE REDRESSAL -->
+            {% if request.user.perm_grv_view or request.user.is_superuser %}
+            <button class="nav-group-btn {% if request.resolver_match.app_name == 'grievance' %}active-group{% endif %}"
+                    data-bs-toggle="collapse" data-bs-target="#menu-grievance"
+                    aria-expanded="{% if request.resolver_match.app_name == 'grievance' %}true{% else %}false{% endif %}">
+                <i class="bi bi-megaphone-fill group-icon"></i> Grievance Redressal
+                <i class="bi bi-chevron-down chevron"></i>
+            </button>
+            <div class="collapse nav-submenu {% if request.resolver_match.app_name == 'grievance' %}show{% endif %}" id="menu-grievance">
+                <a href="{% url 'grievance:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name == 'grievance' %}active{% endif %}">
+                    <i class="bi bi-speedometer"></i> GRV Dashboard
+                </a>
+                <a href="{% url 'grievance:list' %}" class="nav-link {% if request.resolver_match.url_name == 'list' %}active{% endif %}">
+                    <i class="bi bi-list-ul"></i> All Grievances
+                </a>
+                {% if request.user.perm_grv_write or request.user.is_superuser %}
+                <a href="{% url 'grievance:create' %}" class="nav-link {% if request.resolver_match.url_name == 'create' %}active{% endif %}">
+                    <i class="bi bi-plus-circle"></i> Raise Grievance
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- 5. REPORTS -->
+            {% if request.user.perm_reports_igp or request.user.perm_reports_vgp or request.user.perm_reports_mgp or request.user.perm_reports_audit or request.user.perm_grv_manage or request.user.is_superuser %}
+            <button class="nav-group-btn {% if 'report' in request.path or 'audit-log' in request.path or 'user-rights-matrix' in request.path %}active-group{% endif %}"
+                    data-bs-toggle="collapse" data-bs-target="#menu-reports"
+                    aria-expanded="{% if 'report' in request.path or 'audit-log' in request.path or 'user-rights-matrix' in request.path %}true{% else %}false{% endif %}">
+                <i class="bi bi-bar-chart-fill group-icon"></i> Reports
+                <i class="bi bi-chevron-down chevron"></i>
+            </button>
+            <div class="collapse nav-submenu {% if 'report' in request.path or 'audit-log' in request.path or 'user-rights-matrix' in request.path %}show{% endif %}" id="menu-reports">
+                {% if request.user.perm_reports_igp or request.user.is_superuser %}
+                <a href="{% url 'internal_pass:daily_report' %}" class="nav-link {% if request.resolver_match.app_name == 'internal_pass' and 'report' in request.path %}active{% endif %}">
+                    <i class="bi bi-file-earmark-bar-graph"></i> IGP Reports
+                </a>
+                {% endif %}
+                {% if request.user.perm_reports_vgp or request.user.is_superuser %}
+                <a href="{% url 'visitor_pass:daily_report' %}" class="nav-link {% if request.resolver_match.app_name == 'visitor_pass' and 'report' in request.path %}active{% endif %}">
+                    <i class="bi bi-file-earmark-person"></i> VGP Reports
+                </a>
+                {% endif %}
+                {% if request.user.perm_reports_mgp or request.user.is_superuser %}
+                <a href="{% url 'material_pass:daily_report' %}" class="nav-link {% if request.resolver_match.app_name == 'material_pass' and 'report' in request.path %}active{% endif %}">
+                    <i class="bi bi-file-earmark-bar-graph"></i> MGP Reports
+                </a>
+                {% endif %}
+                {% if request.user.perm_grv_manage or request.user.is_superuser %}
+                <a href="{% url 'grievance:report' %}" class="nav-link {% if request.resolver_match.app_name == 'grievance' and 'report' in request.path %}active{% endif %}">
+                    <i class="bi bi-megaphone"></i> GRV Reports
+                </a>
+                {% endif %}
+                {% if request.user.perm_reports_audit or request.user.role == 'administrator' or request.user.is_superuser %}
+                <a href="{% url 'accounts:audit_log' %}" class="nav-link {% if 'audit-log' in request.path %}active{% endif %}">
+                    <i class="bi bi-journal-text"></i> Audit Log
+                </a>
+                {% endif %}
+                {% if request.user.role == 'administrator' or request.user.is_superuser %}
+                <a href="{% url 'accounts:user_rights_matrix' %}" class="nav-link {% if 'user-rights-matrix' in request.path %}active{% endif %}">
+                    <i class="bi bi-table"></i> User Rights Matrix
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- 5. SETTINGS (admin only) -->
+            {% if request.user.role == 'administrator' or request.user.is_superuser %}
+            <button class="nav-group-btn {% if 'settings' in request.path %}active-group{% endif %}"
+                    data-bs-toggle="collapse" data-bs-target="#menu-settings"
+                    aria-expanded="{% if 'settings' in request.path %}true{% else %}false{% endif %}">
+                <i class="bi bi-gear-fill group-icon"></i> Settings
+                <i class="bi bi-chevron-down chevron"></i>
+            </button>
+            <div class="collapse nav-submenu {% if 'settings' in request.path %}show{% endif %}" id="menu-settings">
+                <a href="{% url 'accounts:system_settings' %}" class="nav-link {% if 'settings' in request.path %}active{% endif %}">
+                    <i class="bi bi-sliders"></i> System Settings
+                </a>
+            </div>
+            {% endif %}
+
+            <div style="border-top:1px solid rgba(255,255,255,0.08);margin:10px 0;"></div>
+            <a href="{% url 'accounts:logout' %}" class="nav-link text-danger" style="font-size:13px;">
+                <i class="bi bi-box-arrow-left"></i> Logout
+            </a>
+        </div>
+    </nav>
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <button class="btn btn-sm d-md-none" onclick="document.getElementById('sidebar').classList.toggle('show')">
+            <i class="bi bi-list fs-5"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary d-none d-md-inline-flex sidebar-toggle-btn" type="button"
+                id="sidebarToggleBtn" title="Hide/Show Menu">
+            <i class="bi bi-layout-sidebar-inset" id="sidebarToggleIcon"></i>
+        </button>
+        <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-muted small d-none d-md-block">
+                <i class="bi bi-calendar3 me-1"></i>
+                <span id="current-date"></span>
+            </span>
+            {% if request.user.is_authenticated %}
+            <div class="session-timer d-none d-md-flex" id="session-chip">
+                <i class="bi bi-clock" id="session-chip-icon"></i>
+                <span id="session-chip-time">20:00</span>
+            </div>
+            
+            {% endif %}
+            <div class="dropdown">
+                <div class="d-flex align-items-center gap-2 cursor-pointer" data-bs-toggle="dropdown" style="cursor:pointer">
+                    <div class="user-avatar">{{ request.user.employee_name|first|upper }}</div>
+                    <div class="d-none d-md-block">
+                        <div style="font-size:13px;font-weight:600">{{ request.user.employee_name }}</div>
+                        <div style="font-size:11px;color:var(--text-muted)">{{ request.user.get_role_display }}</div>
+                    </div>
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:10px;min-width:180px">
+                    <li><span class="dropdown-item-text small text-muted">{{ request.user.email }}</span></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{% url 'accounts:forgot_password' %}"><i class="bi bi-key me-2"></i>Change Password</a></li>
+                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#themeModal"><i class="bi bi-palette2 me-2"></i>Theme</button></li>
+                    <li><a class="dropdown-item" href="{% url 'accounts:logout' %}"><i class="bi bi-box-arrow-left me-2"></i>Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        {% if messages %}
+        <div class="mb-3">
+            {% for msg in messages %}
+            <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                <i class="bi bi-{% if msg.tags == 'success' %}check-circle{% elif msg.tags == 'error' or msg.tags == 'danger' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if pending_igp_count or pending_vgp_count or pending_mgp_count or pending_hd_count or pending_grv_count %}
+        <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert" style="border-left:4px solid #f0a500;">
+            <i class="bi bi-hourglass-split me-2 text-warning"></i>
+            <strong>Pending Actions:</strong>
+            {% if pending_igp_count %}<a href="{% url 'internal_pass:pass_list' %}?status=pending" class="badge bg-warning text-dark me-1">IGP: {{ pending_igp_count }} pending</a>{% endif %}
+            {% if pending_vgp_count %}<a href="{% url 'visitor_pass:pass_list' %}?status=pending" class="badge bg-info text-dark me-1">VGP: {{ pending_vgp_count }} pending</a>{% endif %}
+            {% if pending_mgp_count %}<a href="{% url 'material_pass:pass_list' %}?status=pending" class="badge bg-danger me-1">MGP: {{ pending_mgp_count }} pending</a>{% endif %}
+            {% if pending_hd_count %}<a href="{% url 'helpdesk:ticket_list' %}?status=open" class="badge bg-primary me-1">HD: {{ pending_hd_count }} open</a>{% endif %}
+            {% if pending_grv_count %}<a href="{% url 'grievance:list' %}?status=open" class="badge bg-purple me-1" style="background:#7b4bb3;">GRV: {{ pending_grv_count }} open</a>{% endif %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Toast Notification System -->
+    {% include "notification_toasts.html" %}
+    
+    <script>
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-IN', {weekday:'short',year:'numeric',month:'short',day:'numeric'});
+    </script>
+
+    <script>
+        // Desktop sidebar hide/show toggle (persisted)
+        (function () {
+            const btn = document.getElementById('sidebarToggleBtn');
+            const icon = document.getElementById('sidebarToggleIcon');
+            if (!btn) return;
+
+            function applyState(hidden) {
+                document.body.classList.toggle('sidebar-hidden', hidden);
+                if (icon) {
+                    icon.className = hidden ? 'bi bi-layout-sidebar' : 'bi bi-layout-sidebar-inset';
+                }
+            }
+
+            const saved = localStorage.getItem('sidebarHidden');
+            applyState(saved === '1');
+
+            btn.addEventListener('click', () => {
+                const next = !document.body.classList.contains('sidebar-hidden');
+                applyState(next);
+                localStorage.setItem('sidebarHidden', next ? '1' : '0');
+            });
+        })();
+    </script>
+
+    <!-- Session Timeout & Duplicate Login Handling -->
+    {% if request.user.is_authenticated %}
+    <div class="modal fade" id="sessionModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px">
+            <div class="modal-content border-0 rounded-4 shadow-lg">
+                <div class="modal-body text-center p-4" id="sessionModalBody">
+                    <div id="timeoutContent" style="display:none">
+                        <div style="width:64px;height:64px;border-radius:50%;background:#fff3cd;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">⏱️</div>
+                        <h5 class="fw-bold" style="color:#2A2A86;">Session Expiring Soon</h5>
+                        <p class="text-muted" style="font-size:13px;">Your session will expire in <strong id="warnCountdown" class="text-danger">60</strong> seconds due to inactivity.</p>
+                        <button class="btn btn-primary px-4" onclick="extendSession()"><i class="bi bi-arrow-clockwise me-2"></i>Stay Logged In</button>
+                        <button class="btn btn-outline-secondary px-4 ms-2" onclick="window.location='/accounts/logout/'"><i class="bi bi-box-arrow-left me-2"></i>Logout</button>
+                    </div>
+                    <div id="duplicateContent" style="display:none">
+                        <div style="width:64px;height:64px;border-radius:50%;background:#f8d7da;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">🔒</div>
+                        <h5 class="fw-bold text-danger">Account Already Logged In</h5>
+                        <p class="text-muted" style="font-size:13px;">This account has been logged in from another device or browser. You have been logged out for security.</p>
+                        <button class="btn btn-primary px-4" onclick="window.location='/accounts/login/'"><i class="bi bi-box-arrow-in-right me-2"></i>Login Again</button>
+                    </div>
+                    <div id="timedoutContent" style="display:none">
+                        <div style="width:64px;height:64px;border-radius:50%;background:#f8d7da;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">⌛</div>
+                        <h5 class="fw-bold text-danger">Session Expired</h5>
+                        <p class="text-muted" style="font-size:13px;">You have been logged out due to inactivity.</p>
+                        <button class="btn btn-primary px-4" onclick="window.location='/accounts/login/'"><i class="bi bi-box-arrow-in-right me-2"></i>Login Again</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SESSION_TIMEOUT  = {{ SESSION_TIMEOUT_SECONDS|default:1200 }};
+        const WARN_BEFORE      = 60;
+        let idleSeconds        = 0;
+        let warnInterval       = null;
+        let warnSecsLeft       = WARN_BEFORE;
+        const modal            = new bootstrap.Modal(document.getElementById('sessionModal'));
+        const chip             = document.getElementById('session-chip');
+        const chipTime         = document.getElementById('session-chip-time');
+        const chipIcon         = document.getElementById('session-chip-icon');
+
+        function fmtTime(secs) {
+            const m = String(Math.floor(Math.max(secs,0) / 60)).padStart(2, '0');
+            const s = String(Math.max(secs,0) % 60).padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateChip(remaining) {
+            if (!chip) return;
+            chipTime.textContent = fmtTime(remaining);
+            chip.classList.remove('warn', 'danger');
+            chipIcon.className = 'bi bi-clock';
+            if (remaining <= 60) {
+                chip.classList.add('danger');
+                chipIcon.className = 'bi bi-exclamation-triangle-fill';
+            } else if (remaining <= 300) {
+                chip.classList.add('warn');
+                chipIcon.className = 'bi bi-clock-history';
+            }
+        }
+
+        // Track idle time separately from the display timer
+        ['mousemove','keydown','click','scroll','touchstart'].forEach(evt =>
+            document.addEventListener(evt, resetIdle, { passive: true })
+        );
+
+        function resetIdle() {
+            idleSeconds = 0;
+            if (warnInterval) {
+                clearInterval(warnInterval);
+                warnInterval = null;
+                warnSecsLeft = WARN_BEFORE;
+                if (document.getElementById('timeoutContent').style.display !== 'none') {
+                    modal.hide();
+                }
+            }
+        }
+
+        // Main ticker — runs every second, always counts down regardless of activity
+        let remaining = SESSION_TIMEOUT;
+        updateChip(remaining);
+
+        setInterval(() => {
+            idleSeconds++;
+            remaining--;
+            updateChip(remaining);
+
+            if (remaining <= 0) {
+                showModal('timedoutContent');
+                setTimeout(() => window.location = '/accounts/logout/?reason=timeout', 3000);
+                return;
+            }
+            if (remaining <= WARN_BEFORE && !warnInterval) {
+                showModal('timeoutContent');
+                warnSecsLeft = remaining;
+                document.getElementById('warnCountdown').textContent = warnSecsLeft;
+                warnInterval = setInterval(() => {
+                    warnSecsLeft--;
+                    document.getElementById('warnCountdown').textContent = Math.max(warnSecsLeft, 0);
+                    if (warnSecsLeft <= 0) clearInterval(warnInterval);
+                }, 1000);
+            }
+        }, 1000);
+
+        function extendSession() {
+            fetch(window.location.href, { method: 'GET', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(() => {
+                    resetIdle();
+                    remaining = SESSION_TIMEOUT;  // reset display timer on extend
+                    updateChip(remaining);
+                    modal.hide();
+                });
+        }
+
+        function showModal(contentId) {
+            ['timeoutContent','duplicateContent','timedoutContent'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+            document.getElementById(contentId).style.display = 'block';
+            modal.show();
+        }
+
+        setInterval(() => {
+            fetch('/accounts/session-check/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => {
+                    if (r.status === 401) {
+                        r.json().then(data => {
+                            if (data.kicked)  showModal('duplicateContent');
+                            if (data.timeout) showModal('timedoutContent');
+                        });
+                    } else {
+                        // Server confirmed session still alive — sync remaining if user was active
+                        if (idleSeconds === 0) remaining = SESSION_TIMEOUT;
+                    }
+                }).catch(() => {});
+        }, 30000);
+
+        // Send desktop hostname to server once
+        (function() {
+            const hn = window.location.hostname || navigator.userAgent.match(/Windows NT/) ? 'Windows-PC' : 'Unknown';
+            // Use computer name from environment if available via navigator
+            const name = (typeof navigator !== 'undefined' && navigator.userAgentData)
+                ? (navigator.userAgentData.platform || hn) : hn;
+            fetch('/accounts/set-hostname/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ hostname: name })
+            }).catch(() => {});
+        })();
+    </script>
+    {% endif %}
+
+    <!-- Theme picker -->
+    <div class="modal fade" id="themeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+            <div class="modal-content border-0 rounded-4 shadow-lg" style="background:var(--card-bg);color:var(--text);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" style="color:var(--primary)">Theme</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <div class="text-muted small mb-3">Choose how the UI should look on this device.</div>
+                    <div class="d-grid gap-2">
+                        <label class="btn btn-outline-secondary text-start" style="border-radius:12px">
+                            <input class="form-check-input me-2" type="radio" name="uiTheme" value="dark"> Dark
+                        </label>
+                        <label class="btn btn-outline-secondary text-start" style="border-radius:12px">
+                            <input class="form-check-input me-2" type="radio" name="uiTheme" value="light"> White
+                        </label>
+                        <label class="btn btn-outline-secondary text-start" style="border-radius:12px">
+                            <input class="form-check-input me-2" type="radio" name="uiTheme" value="system"> System default
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% block extra_js %}{% endblock %}
+    <script>
+        (function () {
+            function syncThemeRadios() {
+                const mode = window.__getThemeMode ? window.__getThemeMode() : 'system';
+                document.querySelectorAll('input[name="uiTheme"]').forEach(r => { r.checked = (r.value === mode); });
+            }
+            document.addEventListener('shown.bs.modal', (e) => {
+                if (e.target && e.target.id === 'themeModal') syncThemeRadios();
+            });
+            document.addEventListener('change', (e) => {
+                const t = e.target;
+                if (t && t.name === 'uiTheme' && window.__setTheme) window.__setTheme(t.value);
+            });
+        })();
+    </script>
+</body>
+</html>

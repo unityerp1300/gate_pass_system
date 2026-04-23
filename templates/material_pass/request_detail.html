@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block title %}{{ mr.request_number }}{% endblock %}
+{% block page_title %}Material Gate Pass Request Detail{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h4><i class="bi bi-file-earmark-text me-2"></i>{{ mr.request_number }}</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'material_pass:request_list' %}">Material Gate Pass Requests</a></li>
+            <li class="breadcrumb-item active">{{ mr.request_number }}</li>
+        </ol></nav>
+    </div>
+    <div class="d-flex gap-2">
+        {% if can_review %}
+        <a href="{% url 'material_pass:request_review' mr.pk %}" class="btn btn-warning btn-sm">
+            <i class="bi bi-clipboard-check me-1"></i>Review
+        </a>
+        {% endif %}
+        {% if can_convert %}
+        <a href="{% url 'material_pass:request_convert' mr.pk %}" class="btn btn-success btn-sm">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Create Gate Pass
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Left: Request Info -->
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header fw-semibold">Request Information</div>
+            <div class="card-body">
+                <div class="row g-2" style="font-size:13px;">
+                    <div class="col-6 col-md-3"><span class="text-muted">Request No</span><div class="fw-semibold">{{ mr.request_number }}</div></div>
+                    <div class="col-6 col-md-3"><span class="text-muted">Department</span><div class="fw-semibold">{{ mr.department }}</div></div>
+                    <div class="col-6 col-md-3"><span class="text-muted">Requested By</span><div class="fw-semibold">{{ mr.employee.employee_name }}</div></div>
+                    <div class="col-6 col-md-3"><span class="text-muted">Status</span>
+                        <div>
+                            <span class="badge rounded-pill
+                                {% if mr.status == 'submitted' %}bg-warning text-dark
+                                {% elif mr.status == 'hod_approved' %}bg-info text-dark
+                                {% elif mr.status == 'store_approved' or mr.status == 'approved' %}bg-success
+                                {% elif mr.status == 'converted' %}bg-primary
+                                {% elif mr.status == 'hod_rejected' or mr.status == 'store_rejected' or mr.status == 'rejected' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ mr.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3"><span class="text-muted">Request Date</span><div>{{ mr.request_date }}</div></div>
+                    <div class="col-6 col-md-3"><span class="text-muted">Required By</span><div>{{ mr.expected_date|default:"-" }}</div></div>
+                    <div class="col-6 col-md-3"><span class="text-muted">Material Type</span>
+                        <div><span class="badge {% if mr.is_returnable %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                            {% if mr.is_returnable %}Returnable{% else %}Non-Returnable{% endif %}
+                        </span></div>
+                    </div>
+                    <div class="col-12"><span class="text-muted">Reason / Purpose</span><div>{{ mr.reason }}</div></div>
+                    {% if mr.remarks %}<div class="col-12"><span class="text-muted">Remarks</span><div>{{ mr.remarks }}</div></div>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Items -->
+        <div class="card mb-3">
+            <div class="card-header fw-semibold">Requested Items</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr><th>#</th><th>Description</th><th>HSN Code</th><th>Quantity</th><th>Unit</th><th>Remarks</th></tr>
+                        </thead>
+                        <tbody>
+                        {% for item in mr.items.all %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ item.description }}</td>
+                            <td>{{ item.hsn_code|default:"-" }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.unit }}</td>
+                            <td>{{ item.remarks|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Linked Gate Passes -->
+        {% if mr.gate_passes.exists %}
+        <div class="card">
+            <div class="card-header fw-semibold">Linked Gate Passes</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr><th>Pass No</th><th>Date</th><th>Party</th><th>Status</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                        {% for gp in mr.gate_passes.all %}
+                        <tr>
+                            <td class="fw-semibold">{{ gp.pass_number }}</td>
+                            <td>{{ gp.pass_date }}</td>
+                            <td>{{ gp.party_name }}</td>
+                            <td><span class="badge badge-{{ gp.status }}">{{ gp.get_status_display }}</span></td>
+                            <td><a href="{% url 'material_pass:pass_detail' gp.pk %}" class="btn btn-xs btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right: Store Review Info -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header fw-semibold"><i class="bi bi-shop me-2"></i>Store Review</div>
+            <div class="card-body" style="font-size:13px;">
+                {% if mr.reviewed_by %}
+                <div class="mb-2"><span class="text-muted">Reviewed By</span><div class="fw-semibold">{{ mr.reviewed_by.employee_name }}</div></div>
+                <div class="mb-2"><span class="text-muted">Reviewed At</span><div>{{ mr.reviewed_at|date:"d M Y H:i" }}</div></div>
+                <div class="mb-2"><span class="text-muted">Review Remarks</span><div>{{ mr.review_remarks|default:"-" }}</div></div>
+                {% else %}
+                <p class="text-muted mb-0">Pending store review.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>.btn-xs { padding: 2px 7px; font-size: 11px; }</style>
+{% endblock %}

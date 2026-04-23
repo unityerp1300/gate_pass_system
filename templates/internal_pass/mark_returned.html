@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Mark Returned{% endblock %}
+{% block page_title %}Mark as Returned{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:500px">
+    <div class="card-header"><i class="bi bi-arrow-return-left me-2"></i>Mark Return — {{ gp.pass_number }}</div>
+    <div class="card-body">
+        <p class="text-muted">Employee: <strong>{{ gp.employee.employee_name }}</strong></p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label d-flex align-items-center gap-2">
+                    Actual Return Time *
+                    <span class="d-flex align-items-center gap-1 ms-auto">
+                        <input type="checkbox" id="now_return" class="form-check-input" onchange="setNow(this)">
+                        <label for="now_return" class="form-check-label small text-primary fw-semibold mb-0">Now</label>
+                    </span>
+                </label>
+                {{ form.actual_return_time }}
+                {{ form.now_return }}
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-info px-4">
+                    <i class="bi bi-check me-2"></i>Confirm Return
+                </button>
+                <a href="{% url 'internal_pass:pass_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function setNow(cb){
+    const el = document.getElementById('id_actual_return_time');
+    const nowCb = document.getElementById('id_now_return');
+    if(cb.checked){
+        const d = new Date();
+        el.value = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+        el.readOnly = true;
+        if(nowCb) nowCb.checked = true;
+    } else {
+        el.readOnly = false;
+        if(nowCb) nowCb.checked = false;
+    }
+}
+// Auto-check Now on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const cb = document.getElementById('now_return');
+    cb.checked = true;
+    setNow(cb);
+});
+</script>
+{% endblock %}

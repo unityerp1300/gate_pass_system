@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Grievance Dashboard{% endblock %}
+{% block page_title %}Grievance Redressal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h4><i class="bi bi-megaphone-fill me-2"></i>Grievance Dashboard</h4>
+    <div class="d-flex gap-2">
+        {% if can_manage %}
+        <a href="{% url 'grievance:report' %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-earmark-bar-graph me-1"></i>Reports</a>
+        {% endif %}
+        <a href="{% url 'grievance:create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>Raise Grievance</a>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-blue">
+            <div class="stat-icon"><i class="bi bi-megaphone"></i></div>
+            <div class="stat-value">{{ total }}</div>
+            <div class="stat-label">Total Grievances</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-orange">
+            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-value">{{ open }}</div>
+            <div class="stat-label">Open</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-purple">
+            <div class="stat-icon"><i class="bi bi-search"></i></div>
+            <div class="stat-value">{{ under_review }}</div>
+            <div class="stat-label">Under Review</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-green">
+            <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-value">{{ resolved }}</div>
+            <div class="stat-label">Resolved</div>
+        </div>
+    </div>
+</div>
+
+{% if critical %}
+<div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>{{ critical }}</strong> critical grievance(s) pending attention.</div>
+{% endif %}
+
+<!-- Recent Grievances -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history me-2"></i>Recent Grievances</span>
+        <a href="{% url 'grievance:list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Grievance No</th>
+                        {% if can_manage %}<th>Raised By</th>{% endif %}
+                        <th>Subject</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in recent %}
+                    <tr>
+                        <td><code>{{ g.grievance_no }}</code></td>
+                        {% if can_manage %}<td>{{ g.raised_by.employee_name }}</td>{% endif %}
+                        <td>{{ g.subject|truncatechars:40 }}</td>
+                        <td>{{ g.get_category_display }}</td>
+                        <td>
+                            <span class="badge {% if g.priority == 'critical' %}bg-danger{% elif g.priority == 'high' %}bg-warning text-dark{% elif g.priority == 'medium' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+                                {{ g.get_priority_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if g.status == 'open' %}badge-pending{% elif g.status == 'under_review' %}bg-info text-dark{% elif g.status == 'resolved' %}badge-approved{% else %}bg-secondary{% endif %}">
+                                {{ g.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ g.created_at|date:"d M Y" }}</td>
+                        <td><a href="{% url 'grievance:detail' g.pk %}" class="btn btn-sm btn-outline-secondary">View</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8" class="text-center text-muted py-4">No grievances found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

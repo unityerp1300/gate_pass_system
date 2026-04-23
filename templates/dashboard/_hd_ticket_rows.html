@@ -1,0 +1,29 @@
+{% for t in tickets %}
+<tr>
+    <td><a href="/helpdesk/tickets/{{ t.pk }}/" class="fw-semibold text-decoration-none text-primary">{{ t.ticket_number }}</a></td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.title }}</td>
+    <td><small>{{ t.get_category_display }}</small></td>
+    <td>
+        <span class="badge rounded-pill" style="font-size:10px;
+            {% if t.priority == 'critical' %}background:#f8d7da;color:#842029;
+            {% elif t.priority == 'high' %}background:#fff3cd;color:#856404;
+            {% elif t.priority == 'medium' %}background:#d1e7dd;color:#0f5132;
+            {% else %}background:#e2e3e5;color:#383d41;{% endif %}">
+            {{ t.get_priority_display }}
+        </span>
+    </td>
+    <td>
+        <span class="badge rounded-pill" style="font-size:10px;
+            {% if t.status == 'open' %}background:#cfe2ff;color:#084298;
+            {% elif t.status == 'in_progress' %}background:#fff3cd;color:#856404;
+            {% elif t.status == 'resolved' %}background:#d1e7dd;color:#0f5132;
+            {% elif t.status == 'closed' %}background:#f8f9fa;color:#6c757d;
+            {% else %}background:#e2e3e5;color:#383d41;{% endif %}">
+            {{ t.get_status_display }}
+        </span>
+    </td>
+    <td><small>{{ t.created_at|date:"d M Y" }}</small></td>
+</tr>
+{% empty %}
+<tr><td colspan="6" class="text-center text-muted py-3">No tickets</td></tr>
+{% endfor %}

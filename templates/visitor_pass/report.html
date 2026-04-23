@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block title %}{{ report_type }} Report - VGP{% endblock %}
+{% block page_title %}Visitor Gate Pass Report{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-file-earmark-person me-2"></i>{{ report_type }} Report</h4>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'visitor_pass:export_report' %}?type={{ report_type|lower }}&date={{ report_date }}" class="btn btn-success btn-sm">
+            <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+        </a>
+        <a href="{% url 'visitor_pass:export_report_pdf' %}?type={{ report_type|lower }}&date={{ report_date }}" class="btn btn-danger btn-sm">
+            <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+        </a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <div class="d-flex gap-3 flex-wrap align-items-center">
+            <a href="{% url 'visitor_pass:daily_report' %}" class="btn btn-sm {% if report_type == 'Daily' %}btn-success{% else %}btn-outline-success{% endif %}">Daily</a>
+            <a href="{% url 'visitor_pass:monthly_report' %}" class="btn btn-sm {% if report_type == 'Monthly' %}btn-success{% else %}btn-outline-success{% endif %}">Monthly</a>
+            <div class="btn-group" role="group" aria-label="View mode">
+                <a class="btn btn-sm {% if view_mode == 'summary' %}btn-dark{% else %}btn-outline-dark{% endif %}"
+                   href="?{% if report_type == 'Daily' %}date={{ report_date }}{% else %}month={{ report_date }}{% endif %}&dept={{ dept_filter }}&view=summary">
+                    Summary
+                </a>
+                <a class="btn btn-sm {% if view_mode != 'summary' %}btn-dark{% else %}btn-outline-dark{% endif %}"
+                   href="?{% if report_type == 'Daily' %}date={{ report_date }}{% else %}month={{ report_date }}{% endif %}&dept={{ dept_filter }}&view=detail">
+                    Detail
+                </a>
+            </div>
+            <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+                {% if report_type == 'Daily' %}
+                <input type="date" name="date" value="{{ report_date }}" class="form-control form-control-sm" style="width:180px">
+                {% else %}
+                <input type="month" name="month" value="{{ report_date }}" class="form-control form-control-sm" style="width:180px">
+                {% endif %}
+                <select name="dept" class="form-select form-select-sm" style="width:200px">
+                    <option value="">All Departments</option>
+                    {% for val,lbl in department_choices %}
+                    <option value="{{ val }}" {% if dept_filter == val %}selected{% endif %}>{{ lbl }}</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="view" value="{{ view_mode|default:'detail' }}">
+                <button type="submit" class="btn btn-success btn-sm">Filter</button>
+            </form>
+            <span class="text-muted small ms-auto">{{ passes.count }} record(s)</span>
+        </div>
+    </div>
+</div>
+
+{% if view_mode == 'summary' %}
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="text-muted small">Total Passes</div>
+                <div class="fw-bold fs-3">{{ summary.total }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="text-muted small">Total Visitors</div>
+                <div class="fw-bold fs-3">{{ summary.total_visitors }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">By Status</div>
+            <div class="card-body p-0">
+                <table class="table mb-0">
+                    <thead><tr><th>Status</th><th class="text-end">Count</th></tr></thead>
+                    <tbody>
+                    {% for r in summary.by_status %}
+                        <tr><td>{{ r.label }}</td><td class="text-end fw-semibold">{{ r.count }}</td></tr>
+                    {% empty %}
+                        <tr><td colspan="2" class="text-center text-muted py-3">No data</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">By Purpose</div>
+            <div class="card-body p-0">
+                <table class="table mb-0">
+                    <thead><tr><th>Purpose</th><th class="text-end">Count</th></tr></thead>
+                    <tbody>
+                    {% for r in summary.by_purpose %}
+                        <tr><td>{{ r.label }}</td><td class="text-end fw-semibold">{{ r.count }}</td></tr>
+                    {% empty %}
+                        <tr><td colspan="2" class="text-center text-muted py-3">No data</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header fw-semibold">By Department (Contact Person)</div>
+            <div class="card-body p-0">
+                <table class="table mb-0">
+                    <thead><tr><th>Department</th><th class="text-end">Count</th></tr></thead>
+                    <tbody>
+                    {% for r in summary.by_department %}
+                        <tr><td>{{ r.label }}</td><td class="text-end fw-semibold">{{ r.count }}</td></tr>
+                    {% empty %}
+                        <tr><td colspan="2" class="text-center text-muted py-3">No data</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Pass No</th><th>Visitor</th><th>Company</th><th>Phone</th>
+                        <th>Purpose</th><th>Person to Meet</th><th>Date</th>
+                        <th>In</th><th>Exp. Out</th><th>Actual Out</th>
+                        <th>Visitors</th><th>Status</th><th>Approved By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for vgp in passes %}
+                <tr>
+                    <td><a href="{% url 'visitor_pass:pass_detail' vgp.pk %}" class="text-decoration-none fw-semibold">{{ vgp.pass_number }}</a></td>
+                    <td>{{ vgp.visitor_name }}</td>
+                    <td>{{ vgp.visitor_company|default:'-' }}</td>
+                    <td>{{ vgp.visitor_phone }}</td>
+                    <td>{{ vgp.get_visit_purpose_display }}</td>
+                    <td>{{ vgp.person_to_meet.employee_name }}</td>
+                    <td>{{ vgp.visit_date }}</td>
+                    <td>{{ vgp.in_time }}</td>
+                    <td>{{ vgp.expected_out_time }}</td>
+                    <td>{{ vgp.actual_out_time|default:'-' }}</td>
+                    <td>{{ vgp.no_of_visitors }}</td>
+                    <td><span class="badge badge-{{ vgp.status }} px-2 py-1 rounded-pill">{{ vgp.get_status_display }}</span></td>
+                    <td>{{ vgp.approved_by.employee_name|default:'-' }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="13" class="text-center text-muted py-4">No records for this period.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

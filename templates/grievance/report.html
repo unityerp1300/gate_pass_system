@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Grievance Report{% endblock %}
+{% block page_title %}Grievance Reports{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h4><i class="bi bi-file-earmark-bar-graph me-2"></i>Grievance Reports</h4>
+    <a href="?{{ request.GET.urlencode }}&export=csv" class="btn btn-success btn-sm"><i class="bi bi-download me-1"></i>Export CSV</a>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-blue"><div class="stat-icon"><i class="bi bi-megaphone"></i></div><div class="stat-value">{{ stats.total }}</div><div class="stat-label">Total</div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-orange"><div class="stat-icon"><i class="bi bi-hourglass-split"></i></div><div class="stat-value">{{ stats.open }}</div><div class="stat-label">Open</div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-purple"><div class="stat-icon"><i class="bi bi-search"></i></div><div class="stat-value">{{ stats.under_review }}</div><div class="stat-label">Under Review</div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card bg-gradient-green"><div class="stat-icon"><i class="bi bi-check-circle"></i></div><div class="stat-value">{{ stats.resolved }}</div><div class="stat-label">Resolved</div></div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ filters.date_from }}">
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ filters.date_to }}">
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Status</option>
+                    {% for val, label in status_choices %}<option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="category" class="form-select form-select-sm">
+                    <option value="">All Categories</option>
+                    {% for val, label in category_choices %}<option value="{{ val }}" {% if filters.category == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="dept" class="form-select form-select-sm">
+                    <option value="">All Departments</option>
+                    {% for val, label in dept_choices %}<option value="{{ val }}" {% if filters.dept == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-auto">
+                <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+                <a href="{% url 'grievance:report' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Grievance No</th>
+                        <th>Raised By</th>
+                        <th>Department</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Subject</th>
+                        <th>Directed To</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in grievances %}
+                    <tr>
+                        <td><code>{{ g.grievance_no }}</code></td>
+                        <td>{{ g.raised_by.employee_name }}</td>
+                        <td><small>{{ g.raised_by.department }}</small></td>
+                        <td>{{ g.get_category_display }}</td>
+                        <td>
+                            <span class="badge {% if g.priority == 'critical' %}bg-danger{% elif g.priority == 'high' %}bg-warning text-dark{% elif g.priority == 'medium' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+                                {{ g.get_priority_display }}
+                            </span>
+                        </td>
+                        <td>{{ g.subject|truncatechars:35 }}</td>
+                        <td>
+                            {% if g.notify_management %}<span class="badge bg-primary" style="font-size:10px;">Mgmt</span>{% endif %}
+                            {% if g.notify_president %}<span class="badge bg-success" style="font-size:10px;">President</span>{% endif %}
+                            {% if g.notify_hod %}<span class="badge bg-warning text-dark" style="font-size:10px;">HOD</span>{% endif %}
+                            {% if g.notify_hr %}<span class="badge bg-danger" style="font-size:10px;">HR</span>{% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if g.status == 'open' %}badge-pending{% elif g.status == 'under_review' %}bg-info text-dark{% elif g.status == 'resolved' %}badge-approved{% else %}bg-secondary{% endif %}">
+                                {{ g.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ g.created_at|date:"d M Y" }}</td>
+                        <td><a href="{% url 'grievance:detail' g.pk %}" class="btn btn-sm btn-outline-secondary">View</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="10" class="text-center text-muted py-4">No records found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Checkout Visitor{% endblock %}
+{% block page_title %}Visitor Checkout{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:500px">
+    <div class="card-header"><i class="bi bi-box-arrow-right me-2"></i>Checkout — {{ vgp.pass_number }}</div>
+    <div class="card-body">
+        <p class="text-muted">Visitor: <strong>{{ vgp.visitor_name }}</strong></p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label d-flex align-items-center gap-2">
+                    Actual Out Time *
+                    <span class="d-flex align-items-center gap-1 ms-auto">
+                        <input type="checkbox" id="now_checkout_cb" class="form-check-input" onchange="setNow(this)">
+                        <label for="now_checkout_cb" class="form-check-label small text-primary fw-semibold mb-0">Now</label>
+                    </span>
+                </label>
+                {{ form.actual_out_time }}
+                {{ form.now_checkout }}
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-info px-4">
+                    <i class="bi bi-check me-2"></i>Confirm Checkout
+                </button>
+                <a href="{% url 'visitor_pass:pass_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function setNow(cb){
+    const el = document.getElementById('id_actual_out_time');
+    const nowCb = document.getElementById('id_now_checkout');
+    if(cb.checked){
+        const d = new Date();
+        el.value = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+        el.readOnly = true;
+        if(nowCb) nowCb.checked = true;
+    } else {
+        el.readOnly = false;
+        if(nowCb) nowCb.checked = false;
+    }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const cb = document.getElementById('now_checkout_cb');
+    cb.checked = true;
+    setNow(cb);
+});
+</script>
+{% endblock %}

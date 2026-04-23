@@ -1,0 +1,276 @@
+<!-- Tab: Workflow Configuration -->
+<div class="tab-pane fade" id="tab-workflows">
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
+        <i class="bi bi-diagram-3-fill fs-5"></i>
+        <span class="fw-bold">Email & Notification Workflows</span>
+    </div>
+    <div class="card-body">
+        <!-- Info Box -->
+        <div class="alert alert-info border-0" style="background:#e3f2fd;color:#1565c0;">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>About Workflows:</strong><br>
+            Configure approval stages, notification recipients, and channels for each pass type. 
+            These settings control who receives what type of notification at each workflow stage.
+        </div>
+
+        <!-- Global Workflow Settings -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0 fw-bold">Global Workflow Settings</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_workflow_settings">
+                    
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" id="skipMgmtNotif" 
+                                       name="skip_management_notifications" 
+                                       {% if setting.skip_management_notifications %}checked{% endif %}>
+                                <label class="form-check-label" for="skipMgmtNotif">
+                                    <strong>Skip Management Notifications</strong>
+                                    <br>
+                                    <small class="text-muted">Management role will not receive routine notifications (approval-required only)</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" id="skipPlantHeadNotif" 
+                                       name="skip_plant_head_notifications" 
+                                       {% if setting.skip_plant_head_notifications %}checked{% endif %}>
+                                <label class="form-check-label" for="skipPlantHeadNotif">
+                                    <strong>Skip Plant Head Notifications</strong>
+                                    <br>
+                                    <small class="text-muted">Plant Head role will not receive routine notifications (approval-required only)</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-3">
+                    
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <h6 class="fw-semibold text-muted">Notification Channels by Pass Type</h6>
+                        </div>
+                        
+                        <!-- IGP Channels -->
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <h6 class="fw-bold mb-3">Internal Gate Pass (IGP)</h6>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="igpPopup" 
+                                           name="notif_igp_popup" 
+                                           {% if setting.notif_igp_popup %}checked{% endif %}>
+                                    <label class="form-check-label" for="igpPopup">Popup Notifications</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="igpEmail" 
+                                           name="notif_igp_email" 
+                                           {% if setting.notif_igp_email %}checked{% endif %}>
+                                    <label class="form-check-label" for="igpEmail">Email Notifications</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- VGP Channels -->
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <h6 class="fw-bold mb-3">Visitor Gate Pass (VGP)</h6>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="vgpPopup" 
+                                           name="notif_vgp_popup" 
+                                           {% if setting.notif_vgp_popup %}checked{% endif %}>
+                                    <label class="form-check-label" for="vgpPopup">Popup Notifications</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="vgpEmail" 
+                                           name="notif_vgp_email" 
+                                           {% if setting.notif_vgp_email %}checked{% endif %}>
+                                    <label class="form-check-label" for="vgpEmail">Email Notifications</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- MGP Channels -->
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <h6 class="fw-bold mb-3">Material Gate Pass (MGP)</h6>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="mgpPopup" 
+                                           name="notif_mgp_popup" 
+                                           {% if setting.notif_mgp_popup %}checked{% endif %}>
+                                    <label class="form-check-label" for="mgpPopup">Popup Notifications</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="mgpEmail" 
+                                           name="notif_mgp_email" 
+                                           {% if setting.notif_mgp_email %}checked{% endif %}>
+                                    <label class="form-check-label" for="mgpEmail">Email Notifications</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Help Desk Channels -->
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <h6 class="fw-bold mb-3">IT Help Desk</h6>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="hdPopup" 
+                                           name="notif_hd_popup" 
+                                           {% if setting.notif_hd_popup %}checked{% endif %}>
+                                    <label class="form-check-label" for="hdPopup">Popup Notifications</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="hdEmail" 
+                                           name="notif_hd_email" 
+                                           {% if setting.notif_hd_email %}checked{% endif %}>
+                                    <label class="form-check-label" for="hdEmail">Email Notifications</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Save Workflow Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Workflow Details -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0 fw-bold">Configured Workflows & Stages</h6>
+            </div>
+            <div class="card-body">
+                {% if workflows %}
+                    {% for workflow in workflows %}
+                    <div class="mb-4 pb-4 border-bottom">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="badge bg-primary fs-6">
+                                {% if workflow.pass_type == 'igp' %}
+                                    <i class="bi bi-person-walking me-1"></i>IGP
+                                {% elif workflow.pass_type == 'vgp' %}
+                                    <i class="bi bi-person-badge me-1"></i>VGP
+                                {% elif workflow.pass_type == 'mgp' %}
+                                    <i class="bi bi-box2 me-1"></i>MGP
+                                {% elif workflow.pass_type == 'helpdesk' %}
+                                    <i class="bi bi-chat-dots me-1"></i>Help Desk
+                                {% endif %}
+                            </span>
+                            <h6 class="mb-0 fw-bold">{{ workflow.name }}</h6>
+                            {% if workflow.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </div>
+                        
+                        <p class="text-muted small mb-3">{{ workflow.description }}</p>
+                        
+                        {% if workflow.stages.all %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:50px;">#</th>
+                                        <th>Stage Name</th>
+                                        <th style="width:100px;">Type</th>
+                                        <th style="width:120px;">Notify Roles</th>
+                                        <th style="width:80px;">Channels</th>
+                                        <th style="width:80px;">Skip Mgmt</th>
+                                        <th style="width:80px;">Skip Head</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stage in workflow.stages.all %}
+                                    <tr>
+                                        <td class="fw-bold text-center">{{ stage.stage_number }}</td>
+                                        <td>
+                                            <strong>{{ stage.stage_name }}</strong>
+                                            {% if stage.approver_role %}
+                                                <br><small class="badge bg-light text-dark">{{ stage.approver_role }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if stage.is_approval_stage %}
+                                                <span class="badge bg-warning text-dark">Approval</span>
+                                            {% else %}
+                                                <span class="badge bg-info">Notify</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if stage.send_to_roles %}
+                                                {% for role in stage.get_notification_roles %}
+                                                    <small class="badge bg-light text-dark">{{ role }}</small>
+                                                {% endfor %}
+                                            {% else %}
+                                                <small class="text-muted">—</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if stage.notification_type == 'popup' %}
+                                                📲
+                                            {% elif stage.notification_type == 'email' %}
+                                                📧
+                                            {% elif stage.notification_type == 'both' %}
+                                                📲 📧
+                                            {% else %}
+                                                <span class="text-muted">Disabled</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if stage.skip_for_management %}
+                                                <span class="badge bg-warning text-dark">✓</span>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if stage.skip_for_plant_head %}
+                                                <span class="badge bg-warning text-dark">✓</span>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning small mb-0">No stages configured for this workflow.</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="alert alert-info">
+                    No workflows configured. Please run migrations to create default workflows.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="mt-4">
+            <h6 class="fw-semibold">Legend</h6>
+            <ul class="small text-muted mb-0">
+                <li><strong>Approval Stage</strong> - Pass goes through approval workflow</li>
+                <li><strong>Notify Stage</strong> - Just sends notification, not an approval</li>
+                <li><strong>📲</strong> - Popup notification channel</li>
+                <li><strong>📧</strong> - Email notification channel</li>
+                <li><strong>Skip Mgmt</strong> - Don't notify Management role at this stage (if global setting enabled)</li>
+                <li><strong>Skip Head</strong> - Don't notify Plant Head role at this stage (if global setting enabled)</li>
+            </ul>
+        </div>
+    </div>
+</div>
+</div>
+<!-- end tab-workflows -->

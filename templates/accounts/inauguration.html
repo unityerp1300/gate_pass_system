@@ -1,0 +1,269 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ setting.welcome_title|default:"Welcome" }} | Unity Cement ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --primary:#2A2A86;
+            --primary2:#3C3CA0;
+            --accent:#f0a500;
+            --ink:#0b1220;
+            --muted:#718096;
+        }
+        html[data-theme="dark"]{
+            color-scheme: dark;
+        }
+        *{ font-family: 'Inter', sans-serif; }
+        body{
+            min-height:100vh;
+            margin:0;
+            color: var(--ink);
+            background:
+                radial-gradient(1100px 720px at 10% 10%, rgba(240,165,0,0.18), transparent 55%),
+                radial-gradient(900px 700px at 95% 35%, rgba(60,60,160,0.55), transparent 60%),
+                linear-gradient(135deg, #151556 0%, #1F1F6B 50%, #3C3CA0 100%);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding: 28px 16px;
+            overflow-x:hidden;
+        }
+        body::before{
+            content:"";
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px);
+            background-size: 52px 52px;
+            mask-image: radial-gradient(closest-side at 50% 35%, rgba(0,0,0,0.9), transparent 80%);
+            pointer-events:none;
+            opacity:.55;
+        }
+        .wrap{ width: 100%; max-width: 1040px; }
+        .hero{
+            border-radius: 22px;
+            padding: 26px;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid rgba(255,255,255,0.35);
+            box-shadow: 0 32px 90px rgba(0,0,0,0.55);
+            backdrop-filter: blur(14px);
+            position: relative;
+            overflow:hidden;
+        }
+        .hero::after{
+            content:"";
+            position:absolute;
+            inset:-1px;
+            border-radius:22px;
+            padding:1px;
+            background: linear-gradient(135deg, rgba(240,165,0,0.55), rgba(60,60,160,0.45), rgba(255,255,255,0.25));
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events:none;
+            opacity:.75;
+        }
+        .brand{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap: 12px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            margin-bottom: 18px;
+        }
+        .brand img{ height: 42px; width:auto; object-fit: contain; }
+        .chip{
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.7px;
+            text-transform: uppercase;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: rgba(240,165,0,0.16);
+            color: #7a4d00;
+            border: 1px solid rgba(240,165,0,0.35);
+        }
+        .title{
+            font-weight: 800;
+            letter-spacing: -0.6px;
+            font-size: clamp(24px, 3.2vw, 40px);
+            line-height: 1.15;
+            color: var(--primary);
+            margin: 0;
+        }
+        .subtitle{
+            margin-top: 10px;
+            color: rgba(15,23,42,0.72);
+            font-size: 13.5px;
+            line-height: 1.6;
+            max-width: 860px;
+        }
+        .grid{
+            display:grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        @media (max-width: 900px){
+            .grid{ grid-template-columns: 1fr; }
+        }
+        .cardx{
+            border-radius: 18px;
+            background: rgba(255,255,255,0.86);
+            border: 1px solid rgba(0,0,0,0.06);
+            padding: 18px;
+        }
+        .cardx h6{
+            font-weight: 800;
+            color: var(--primary);
+            margin: 0 0 10px 0;
+            display:flex;
+            align-items:center;
+            gap: 10px;
+        }
+        .cardx h6 i{ color: var(--accent); }
+        .msg{
+            font-size: 13.5px;
+            color: rgba(15,23,42,0.78);
+            line-height: 1.75;
+            white-space: pre-wrap;
+            margin: 0;
+        }
+        .actions{
+            display:flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+            align-items:center;
+            justify-content: space-between;
+        }
+        .btn-continue{
+            background: linear-gradient(135deg, var(--primary), var(--primary2));
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-weight: 700;
+            box-shadow: 0 12px 28px rgba(42,42,134,0.28);
+        }
+        .btn-continue:hover{ color:#fff; transform: translateY(-1px); }
+        .btn-outline{
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-weight: 700;
+        }
+        .foot{
+            color: rgba(255,255,255,0.55);
+            font-size: 12px;
+            text-align:center;
+            margin-top: 16px;
+        }
+
+        /* Dark */
+        html[data-theme="dark"] body{
+            background:
+                radial-gradient(1100px 720px at 10% 10%, rgba(240,165,0,0.10), transparent 55%),
+                radial-gradient(900px 700px at 95% 35%, rgba(60,60,160,0.38), transparent 60%),
+                linear-gradient(135deg, #060b14 0%, #0b1220 55%, #0f1a2b 100%);
+        }
+        html[data-theme="dark"] .hero{ background: rgba(15,26,43,0.92); border-color: rgba(255,255,255,0.10); }
+        html[data-theme="dark"] .brand{ border-bottom-color: rgba(255,255,255,0.10); }
+        html[data-theme="dark"] .title{ color: #e6edf7; }
+        html[data-theme="dark"] .subtitle{ color: rgba(230,237,247,0.72); }
+        html[data-theme="dark"] .cardx{ background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.10); }
+        html[data-theme="dark"] .msg{ color: rgba(230,237,247,0.80); }
+        html[data-theme="dark"] .chip{ background: rgba(240,165,0,0.12); color: rgba(255,220,160,0.95); border-color: rgba(240,165,0,0.25); }
+    </style>
+    <script>
+        (function () {
+            const KEY = 'uiTheme';
+            const saved = localStorage.getItem(KEY) || 'system';
+            const mql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+            function resolve(mode) {
+                if (mode === 'dark' || mode === 'light') return mode;
+                return (mql && mql.matches) ? 'dark' : 'light';
+            }
+            function apply(mode) {
+                const resolved = resolve(mode);
+                document.documentElement.setAttribute('data-theme', resolved === 'dark' ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme-mode', mode);
+            }
+            window.__setTheme = function (mode) {
+                localStorage.setItem(KEY, mode);
+                apply(mode);
+            };
+            apply(saved);
+            if (mql) {
+                mql.addEventListener?.('change', () => {
+                    if ((localStorage.getItem(KEY) || 'system') === 'system') apply('system');
+                });
+            }
+        })();
+    </script>
+</head>
+<body>
+<div class="wrap">
+    <div class="hero">
+        <div class="brand">
+            <img src="{% static 'images/Unity_Logo_Horizontal.png' %}" alt="Unity Cement">
+            <div class="d-flex align-items-center gap-2">
+                <span class="chip">Inauguration • v{{ setting.welcome_version }}</span>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" style="border-radius:999px;">
+                        <i class="bi bi-palette2 me-1"></i>Theme
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:12px; min-width: 200px;">
+                        <li><button class="dropdown-item" type="button" onclick="window.__setTheme('dark')"><i class="bi bi-moon-stars me-2"></i>Dark</button></li>
+                        <li><button class="dropdown-item" type="button" onclick="window.__setTheme('light')"><i class="bi bi-sun me-2"></i>White</button></li>
+                        <li><button class="dropdown-item" type="button" onclick="window.__setTheme('system')"><i class="bi bi-laptop me-2"></i>System default</button></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <h1 class="title">{{ setting.welcome_title|default:"Welcome to the ERP System" }}</h1>
+        <div class="subtitle">
+            We’re pleased to share a brief message from leadership. This screen appears once per user (or again when version is increased from System Settings).
+        </div>
+
+        <div class="grid">
+            <div class="cardx">
+                <h6><i class="bi bi-people-fill"></i>Message from the Management Team</h6>
+                <p class="msg">{{ setting.welcome_message_management|default_if_none:"" }}</p>
+            </div>
+            <div class="cardx">
+                <h6><i class="bi bi-award-fill"></i>Message from the President</h6>
+                <p class="msg">{{ setting.welcome_message_president|default_if_none:"" }}</p>
+            </div>
+        </div>
+
+        <div class="actions">
+            <form method="post" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-continue">
+                    <i class="bi bi-check2-circle me-2"></i>I Understand — Continue
+                </button>
+                <a class="btn btn-outline-secondary btn-outline ms-2" href="{% url 'accounts:logout' %}">
+                    <i class="bi bi-box-arrow-left me-2"></i>Logout
+                </a>
+            </form>
+            <div class="text-muted small">
+                Logged in as <strong>{{ request.user.employee_name }}</strong>
+            </div>
+        </div>
+    </div>
+    <div class="foot">© 2026 Powered By ERP Department PMC Cement LTD</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

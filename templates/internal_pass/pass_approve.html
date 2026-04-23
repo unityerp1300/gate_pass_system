@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}Approve Gate Pass{% endblock %}
+{% block page_title %}Approve Gate Pass{% endblock %}
+
+{% block extra_css %}
+<style>
+.stage-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
+.stage-row:last-child { border-bottom: none; }
+.stage-dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.stage-dot.approved { background: #d1e7dd; color: #0f5132; }
+.stage-dot.rejected { background: #f8d7da; color: #842029; }
+.stage-dot.pending  { background: #fff3cd; color: #856404; }
+.stage-dot.current  { background: #cfe2ff; color: #084298; border: 2px solid #084298; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-check-circle me-2"></i>Approve / Reject — {{ gp.pass_number }}</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'internal_pass:pass_list' %}">Internal Gate Pass</a></li>
+            <li class="breadcrumb-item active">Approve</li>
+        </ol></nav>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Pass Summary -->
+    <div class="col-md-5">
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-person-walking me-2"></i>Pass Summary</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><th>Pass No</th><td class="fw-semibold text-primary">{{ gp.pass_number }}</td></tr>
+                    <tr><th>Employee</th><td>{{ gp.employee.employee_name }}</td></tr>
+                    <tr><th>Emp Code</th><td>{{ gp.employee.employee_code }}</td></tr>
+                    <tr><th>Department</th><td>{{ gp.employee.department }}</td></tr>
+                    <tr><th>Purpose</th><td>{{ gp.get_purpose_display }}</td></tr>
+                    <tr><th>Destination</th><td>{{ gp.destination }}</td></tr>
+                    <tr><th>Date</th><td>{{ gp.out_date }}</td></tr>
+                    <tr><th>Out Time</th><td>{{ gp.out_time }}</td></tr>
+                    <tr><th>Exp. Return</th><td>{{ gp.expected_return_time }}</td></tr>
+                    <tr><th>Details</th><td>{{ gp.purpose_detail }}</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Approval Stages -->
+        <div class="card">
+            <div class="card-header"><i class="bi bi-diagram-3 me-2"></i>Approval Stages</div>
+            <div class="card-body py-2">
+                {% for s in stages %}
+                <div class="stage-row">
+                    <div class="stage-dot {% if s.pk == stage.pk %}current{% else %}{{ s.status }}{% endif %}">
+                        {% if s.pk == stage.pk %}<i class="bi bi-pencil"></i>
+                        {% elif s.status == 'approved' %}<i class="bi bi-check-lg"></i>
+                        {% elif s.status == 'rejected' %}<i class="bi bi-x-lg"></i>
+                        {% else %}<i class="bi bi-hourglass-split"></i>{% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div style="font-size:13px;font-weight:600;color:#2A2A86;">
+                            Stage {{ s.stage|add:1 }}: {{ s.stage_label }}
+                            {% if s.pk == stage.pk %}<span class="badge bg-primary ms-1" style="font-size:10px;">Current</span>{% endif %}
+                        </div>
+                        {% if s.approver %}
+                        <div style="font-size:11px;color:#718096;">{{ s.approver.employee_name }} — {{ s.acted_at|date:"d M Y, H:i" }}</div>
+                        {% else %}
+                        <div style="font-size:11px;color:#718096;">Awaiting action</div>
+                        {% endif %}
+                        {% if s.remarks %}<div style="font-size:11px;color:#718096;font-style:italic;">"{{ s.remarks }}"</div>{% endif %}
+                    </div>
+                    <span class="badge badge-{{ s.status }}" style="font-size:10px;">{{ s.status|upper }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Form -->
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-shield-check me-2"></i>
+                Your Decision — <span class="text-primary">{{ stage.stage_label }}</span>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info border-0 rounded-3 mb-4" style="font-size:13px;">
+                    <i class="bi bi-info-circle me-2"></i>
+                    You are acting as <strong>{{ request.user.get_role_display }}</strong> for Stage {{ stage.stage|add:1 }}: <strong>{{ stage.stage_label }}</strong>.
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label class="form-label">Action *</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="action" id="act_approve" value="approved" checked>
+                                <label class="form-check-label text-success fw-semibold" for="act_approve">
+                                    <i class="bi bi-check-circle me-1"></i>Approve
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="action" id="act_reject" value="rejected">
+                                <label class="form-check-label text-danger fw-semibold" for="act_reject">
+                                    <i class="bi bi-x-circle me-1"></i>Reject
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Remarks <small class="text-muted">(optional)</small></label>
+                        <textarea name="remarks" class="form-control" rows="3" placeholder="Add remarks..."></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check-circle me-2"></i>Submit Decision
+                        </button>
+                        <a href="{% url 'internal_pass:pass_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

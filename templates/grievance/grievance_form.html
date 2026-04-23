@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h4><i class="bi bi-megaphone me-2"></i>{{ title }}</h4>
+    <a href="{% url 'grievance:list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="grv-form">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Category *</label>
+                            {{ form.category }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Priority *</label>
+                            {{ form.priority }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Subject *</label>
+                            {{ form.subject }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description *</label>
+                            {{ form.description }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Attachment (optional)</label>
+                            {{ form.attachment }}
+                        </div>
+
+                        <!-- Notify section -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Raise Complaint To</label>
+                            <div class="border rounded p-3 bg-light">
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            {{ form.notify_management }}
+                                            <label class="form-check-label" for="{{ form.notify_management.id_for_label }}">
+                                                <i class="bi bi-briefcase-fill text-primary me-1"></i> Management
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            {{ form.notify_president }}
+                                            <label class="form-check-label" for="{{ form.notify_president.id_for_label }}">
+                                                <i class="bi bi-building-fill text-success me-1"></i> President / Plant Head
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            {{ form.notify_hod }}
+                                            <label class="form-check-label" for="{{ form.notify_hod.id_for_label }}">
+                                                <i class="bi bi-person-badge-fill text-warning me-1"></i> Department HOD
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            {{ form.notify_hr }}
+                                            <label class="form-check-label" for="{{ form.notify_hr.id_for_label }}">
+                                                <i class="bi bi-people-fill text-danger me-1"></i> HR
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted">Select who should receive this grievance.</small>
+                        </div>
+
+                        <div class="col-12 d-flex gap-2 justify-content-end">
+                            <a href="{% url 'grievance:list' %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-send me-1"></i>Submit Grievance</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('grv-form').addEventListener('submit', function(e) {
+    if (this.checkValidity()) return;
+    e.preventDefault();
+    const inv = this.querySelector(':invalid');
+    if (!inv) return;
+    const lbl = inv.closest('.col-12,.col-md-6')?.querySelector('.form-label');
+    alert('Please fill the mandatory field: ' + (lbl ? lbl.textContent.replace('*','').trim() : inv.name));
+    inv.focus();
+});
+</script>
+{% endblock %}

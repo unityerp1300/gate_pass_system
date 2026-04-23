@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Grievances{% endblock %}
+{% block page_title %}All Grievances{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h4><i class="bi bi-list-ul me-2"></i>Grievances</h4>
+    <a href="{% url 'grievance:create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>Raise Grievance</a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <input type="text" name="q" class="form-control form-control-sm" placeholder="Search…" value="{{ filters.q }}">
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Status</option>
+                    {% for val, label in status_choices %}<option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="category" class="form-select form-select-sm">
+                    <option value="">All Categories</option>
+                    {% for val, label in category_choices %}<option value="{{ val }}" {% if filters.category == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="priority" class="form-select form-select-sm">
+                    <option value="">All Priority</option>
+                    {% for val, label in priority_choices %}<option value="{{ val }}" {% if filters.priority == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-auto">
+                <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+                <a href="{% url 'grievance:list' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<form method="post" id="bulk-form">
+{% csrf_token %}
+<div class="card">
+    <!-- Bulk action bar -->
+    <div class="card-header d-flex align-items-center gap-2 flex-wrap">
+        <div class="form-check me-2">
+            <input class="form-check-input" type="checkbox" id="selectAll" onchange="toggleAll(this)">
+            <label class="form-check-label small fw-semibold" for="selectAll">Select All</label>
+        </div>
+        <select name="bulk_action" class="form-select form-select-sm" style="width:auto;">
+            <option value="">Bulk Action…</option>
+            <option value="cancel">Close Selected</option>
+            <option value="duplicate">Duplicate Selected</option>
+            {% if can_manage %}<option value="delete">Delete Selected</option>{% endif %}
+        </select>
+        <button type="submit" class="btn btn-sm btn-outline-danger"
+                onclick="return confirm('Apply bulk action to selected grievances?')">
+            <i class="bi bi-check2 me-1"></i>Apply
+        </button>
+        <span class="ms-auto text-muted small">{{ page_obj.paginator.count }} total</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:36px;"></th>
+                        <th>Grievance No</th>
+                        {% if can_manage %}<th>Raised By</th><th>Dept</th>{% endif %}
+                        <th>Subject</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in grievances %}
+                    <tr>
+                        <td><input class="form-check-input row-cb" type="checkbox" name="selected_ids" value="{{ g.pk }}"></td>
+                        <td><code>{{ g.grievance_no }}</code></td>
+                        {% if can_manage %}
+                        <td>{{ g.raised_by.employee_name }}</td>
+                        <td><small>{{ g.raised_by.department }}</small></td>
+                        {% endif %}
+                        <td>{{ g.subject|truncatechars:40 }}</td>
+                        <td><small>{{ g.get_category_display }}</small></td>
+                        <td>
+                            <span class="badge {% if g.priority == 'critical' %}bg-danger{% elif g.priority == 'high' %}bg-warning text-dark{% elif g.priority == 'medium' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+                                {{ g.get_priority_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if g.status == 'open' %}badge-pending{% elif g.status == 'under_review' %}bg-info text-dark{% elif g.status == 'resolved' %}badge-approved{% else %}bg-secondary{% endif %}">
+                                {{ g.get_status_display }}
+                            </span>
+                        </td>
+                        <td><small>{{ g.created_at|date:"d M Y" }}</small></td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{% url 'grievance:detail' g.pk %}" class="btn btn-xs btn-outline-secondary" style="padding:2px 8px;font-size:11px;">View</a>
+                                {% if g.raised_by == request.user or can_manage %}
+                                <a href="{% url 'grievance:edit' g.pk %}" class="btn btn-xs btn-outline-primary" style="padding:2px 8px;font-size:11px;">Edit</a>
+                                <a href="{% url 'grievance:duplicate' g.pk %}" class="btn btn-xs btn-outline-success" style="padding:2px 8px;font-size:11px;" onclick="return confirm('Duplicate this grievance?')">Copy</a>
+                                {% endif %}
+                                {% if can_manage %}
+                                <a href="{% url 'grievance:delete' g.pk %}" class="btn btn-xs btn-outline-danger" style="padding:2px 8px;font-size:11px;" onclick="return confirm('Delete this grievance permanently?')">Del</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="10" class="text-center text-muted py-4">No grievances found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</form>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ filters.q }}&status={{ filters.status }}&category={{ filters.category }}&priority={{ filters.priority }}">«</a></li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}&q={{ filters.q }}&status={{ filters.status }}&category={{ filters.category }}&priority={{ filters.priority }}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ filters.q }}&status={{ filters.status }}&category={{ filters.category }}&priority={{ filters.priority }}">»</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleAll(cb) {
+    document.querySelectorAll('.row-cb').forEach(r => r.checked = cb.checked);
+}
+</script>
+{% endblock %}

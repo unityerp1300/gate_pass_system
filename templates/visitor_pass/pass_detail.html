@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% block title %}{{ vgp.pass_number }}{% endblock %}
+{% block page_title %}Visitor Pass Detail{% endblock %}
+
+{% block content %}
+
+{# ── AUTO POPUP based on status ── #}
+{% if vgp.status == 'approved' %}
+<div class="modal fade" id="statusModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-success">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-check-circle-fill me-2"></i>Pass Approved</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-1"><strong>Pass:</strong> {{ vgp.pass_number }}</p>
+        <p class="mb-1"><strong>Visitor:</strong> {{ vgp.visitor_name }}</p>
+        <p class="mb-1"><strong>Approved By:</strong> <span class="text-success fw-semibold">{{ vgp.approved_by.employee_name|default:'-' }}</span></p>
+        <p class="mb-1"><strong>Approved At:</strong> {{ vgp.approved_at|default:'-' }}</p>
+        <p class="mb-0"><strong>Remarks:</strong> {{ vgp.approval_remarks|default:'-' }}</p>
+      </div>
+      <div class="modal-footer">
+        <a href="{% url 'visitor_pass:checkout' vgp.pk %}" class="btn btn-info btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Checkout Now</a>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% elif vgp.status == 'checked_out' %}
+<div class="modal fade" id="statusModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-info">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title"><i class="bi bi-box-arrow-right me-2"></i>Visitor Checked Out</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-1"><strong>Pass:</strong> {{ vgp.pass_number }}</p>
+        <p class="mb-1"><strong>Visitor:</strong> {{ vgp.visitor_name }}</p>
+        <p class="mb-0"><strong>Out Time:</strong> {{ vgp.actual_out_time|default:'-' }}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% elif vgp.status == 'pending' %}
+<div class="modal fade" id="statusModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-warning">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title"><i class="bi bi-hourglass-split me-2"></i>Approval Pending</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-1"><strong>Pass:</strong> {{ vgp.pass_number }}</p>
+        <p class="mb-1"><strong>Visitor:</strong> {{ vgp.visitor_name }}</p>
+        <p class="mb-0 text-muted">Waiting for approval from <strong>{{ vgp.person_to_meet.employee_name }}</strong>.</p>
+      </div>
+      <div class="modal-footer">
+        {% if request.user.can_approve_visitor_pass or request.user.is_superuser %}
+        <a href="{% url 'visitor_pass:pass_approve' vgp.pk %}" class="btn btn-success btn-sm"><i class="bi bi-check-circle me-1"></i>Approve Now</a>
+        {% endif %}
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-file-earmark-text me-2"></i>{{ vgp.pass_number }}</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'visitor_pass:pass_list' %}">Visitor Gate Pass</a></li>
+            <li class="breadcrumb-item active">{{ vgp.pass_number }}</li>
+        </ol></nav>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'visitor_pass:print_pass' vgp.pk %}" class="btn btn-dark btn-sm" target="_blank">
+            <i class="bi bi-printer me-1"></i>Print PDF
+        </a>
+        {% if vgp.status == 'pending' and request.user.can_approve_visitor_pass or request.user.is_superuser %}
+        <a href="{% url 'visitor_pass:pass_approve' vgp.pk %}" class="btn btn-success btn-sm">
+            <i class="bi bi-check-circle me-1"></i>Approve/Reject
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{# ── APPROVAL STAGE TIMELINE ── #}
+<div class="card mb-3">
+  <div class="card-header fw-semibold"><i class="bi bi-diagram-3 me-2"></i>Approval Stage</div>
+  <div class="card-body">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+
+      {# Stage 1: Created #}
+      <div class="text-center">
+        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
+             style="width:38px;height:38px;background:#d1e7dd;color:#0f5132;font-size:16px;">
+          <i class="bi bi-plus-circle-fill"></i>
+        </div>
+        <div style="font-size:11px;" class="fw-semibold text-success">Created</div>
+        <div style="font-size:10px;" class="text-muted">{{ vgp.created_by.employee_name|default:'Security' }}</div>
+      </div>
+
+      <div class="flex-grow-1" style="height:2px;background:#dee2e6;min-width:20px;"></div>
+
+      {# Stage 2: Pending / Approved / Rejected #}
+      {% if vgp.status == 'pending' %}
+      <div class="text-center">
+        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
+             style="width:38px;height:38px;background:#fff3cd;color:#856404;font-size:16px;border:2px solid #ffc107;">
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div style="font-size:11px;" class="fw-semibold text-warning">Pending</div>
+        <div style="font-size:10px;" class="text-muted">{{ vgp.person_to_meet.employee_name }}</div>
+      </div>
+      {% elif vgp.status == 'rejected' %}
+      <div class="text-center">
+        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
+             style="width:38px;height:38px;background:#f8d7da;color:#842029;font-size:16px;">
+          <i class="bi bi-x-circle-fill"></i>
+        </div>
+        <div style="font-size:11px;" class="fw-semibold text-danger">Rejected</div>
+        <div style="font-size:10px;" class="text-muted">{{ vgp.approved_by.employee_name|default:'-' }}</div>
+      </div>
+      {% else %}
+      <div class="text-center">
+        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
+             style="width:38px;height:38px;background:#d1e7dd;color:#0f5132;font-size:16px;">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <div style="font-size:11px;" class="fw-semibold text-success">Approved</div>
+        <div style="font-size:10px;" class="text-muted">{{ vgp.approved_by.employee_name|default:'-' }}</div>
+      </div>
+      {% endif %}
+
+      <div class="flex-grow-1" style="height:2px;background:#dee2e6;min-width:20px;"></div>
+
+      {# Stage 3: Checked Out #}
+      {% if vgp.status == 'checked_out' %}
+      <div class="text-center">
+        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
+             style="width:38px;height:38px;background:#cff4fc;color:#055160;font-size:16px;">
+          <i class="bi bi-box-arrow-right"></i>
+        </div>
+        <div style="font-size:11px;" class="fw-semibold text-info">Checked Out</div>
+        <div style="font-size:10px;" class="text-muted">{{ vgp.actual_out_time|default:'-' }}</div>
+      </div>
+      {% else %}
+      <div class="text-center opacity-50">
+        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
+             style="width:38px;height:38px;background:#e9ecef;color:#6c757d;font-size:16px;">
+          <i class="bi bi-box-arrow-right"></i>
+        </div>
+        <div style="font-size:11px;" class="fw-semibold text-muted">Checkout</div>
+        <div style="font-size:10px;" class="text-muted">Pending</div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header">Visitor Information</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6"><div class="text-muted small">Pass Number</div><div class="fw-semibold">{{ vgp.pass_number }}</div></div>
+                    <div class="col-md-6"><div class="text-muted small">Status</div><span class="badge badge-{{ vgp.status }} px-3 py-2 rounded-pill fs-6">{{ vgp.get_status_display }}</span></div>
+                    <div class="col-md-6"><div class="text-muted small">Visitor Name</div><div class="fw-semibold">{{ vgp.visitor_name }}</div></div>
+                    <div class="col-md-6"><div class="text-muted small">Company</div><div>{{ vgp.visitor_company|default:'-' }}</div></div>
+                    <div class="col-md-6"><div class="text-muted small">Phone</div><div>{{ vgp.visitor_phone }}</div></div>
+                    <div class="col-md-6"><div class="text-muted small">Email</div><div>{{ vgp.visitor_email|default:'-' }}</div></div>
+                    <div class="col-md-6"><div class="text-muted small">ID Type</div><div>{{ vgp.get_id_type_display }}</div></div>
+                    <div class="col-md-6"><div class="text-muted small">ID Number</div><div>{{ vgp.id_number }}</div></div>
+                    <div class="col-md-6"><div class="text-muted small">No. of Visitors</div><div>{{ vgp.no_of_visitors }}</div></div>
+                    <div class="col-md-6"><div class="text-muted small">Vehicle Number</div><div>{{ vgp.vehicle_number|default:'-' }}</div></div>
+                    <div class="col-md-6"><div class="text-muted small">Purpose</div><div>{{ vgp.get_visit_purpose_display }}</div></div>
+                    <div class="col-md-6"><div class="text-muted small">Person to Meet</div><div>{{ vgp.person_to_meet.employee_name }}</div></div>
+                    <div class="col-12"><div class="text-muted small">Visit Details</div><div>{{ vgp.visit_detail }}</div></div>
+                    {% if vgp.items_carried %}<div class="col-12"><div class="text-muted small">Items Carried</div><div>{{ vgp.items_carried }}</div></div>{% endif %}
+                    <div class="col-md-4"><div class="text-muted small">Visit Date</div><div>{{ vgp.visit_date }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">In Time</div><div>{{ vgp.in_time }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">Expected Out</div><div>{{ vgp.expected_out_time }}</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-camera me-2"></i>Visitor Photo</span>
+                <a href="{% url 'visitor_pass:capture_photo' vgp.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-camera me-1"></i>{% if vgp.visitor_photo %}Retake{% else %}Capture{% endif %}
+                </a>
+            </div>
+            <div class="card-body text-center">
+                {% if vgp.visitor_photo %}
+                <img src="{{ vgp.visitor_photo.url }}" alt="Visitor Photo"
+                     style="width:160px;height:200px;object-fit:cover;border-radius:10px;border:3px solid #27ae60;">
+                {% else %}
+                <div style="width:160px;height:200px;background:#f8f9fa;border-radius:10px;border:2px dashed #dee2e6;display:flex;align-items:center;justify-content:center;margin:0 auto;flex-direction:column;gap:8px;">
+                    <i class="bi bi-person-bounding-box" style="font-size:40px;color:#adb5bd;"></i>
+                    <span class="text-muted small">No photo captured</span>
+                </div>
+                <a href="{% url 'visitor_pass:capture_photo' vgp.pk %}" class="btn btn-success btn-sm mt-2">
+                    <i class="bi bi-camera me-1"></i>Capture Now
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">Approval Info</div>
+            <div class="card-body">
+                <div class="mb-2"><div class="text-muted small">Approved By</div><div>{{ vgp.approved_by.employee_name|default:'Pending' }}</div></div>
+                <div class="mb-2"><div class="text-muted small">Approved At</div><div>{{ vgp.approved_at|default:'-' }}</div></div>
+                <div class="mb-2"><div class="text-muted small">Remarks</div><div>{{ vgp.approval_remarks|default:'-' }}</div></div>
+                <div><div class="text-muted small">Actual Out Time</div><div>{{ vgp.actual_out_time|default:'Not checked out' }}</div></div>
+            </div>
+        </div>
+        {% if vgp.status == 'approved' %}
+        <a href="{% url 'visitor_pass:checkout' vgp.pk %}" class="btn btn-info w-100">
+            <i class="bi bi-box-arrow-right me-2"></i>Checkout Visitor
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+{% if vgp.status == 'approved' or vgp.status == 'checked_out' or vgp.status == 'pending' %}
+document.addEventListener('DOMContentLoaded', () => {
+    new bootstrap.Modal(document.getElementById('statusModal')).show();
+});
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,240 @@
+<!-- Tab: Notification Permissions -->
+<div class="tab-pane fade" id="tab-notifications">
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
+        <i class="bi bi-bell-fill fs-5"></i>
+        <span class="fw-bold">Notification Permissions & Visibility Settings</span>
+    </div>
+    <div class="card-body">
+        <!-- Info Box -->
+        <div class="alert alert-info border-0" style="background:#e3f2fd;color:#1565c0;">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>About Notification Permissions:</strong><br>
+            Control who receives and sees which notifications. Administrators, Management, and President always see all notifications.
+            <a href="{% url 'accounts:system_settings' %}#" class="text-info" onclick="alert('See NOTIFICATIONS_PERMISSIONS_GUIDE.md for detailed documentation')">View documentation</a>
+        </div>
+
+        <!-- Add New Permission Form -->
+        <form method="post" class="mb-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_notification_permissions">
+            
+            <div class="row g-3">
+                <!-- Scope Selection -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Scope <span class="text-danger">*</span></label>
+                    <select name="notification_scope" class="form-select" id="notifScope" onchange="updateScopeFields()" required>
+                        <option value="">Choose scope...</option>
+                        <option value="role">By Role</option>
+                        <option value="employee">By Employee</option>
+                        <option value="department">By Department</option>
+                    </select>
+                </div>
+
+                <!-- Role Field (shown only when scope=role) -->
+                <div class="col-md-3" id="roleField" style="display:none;">
+                    <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
+                    <select name="notification_role" class="form-select">
+                        <option value="">Select role...</option>
+                        {% for role_value, role_label in role_choices %}
+                            <option value="{{ role_value }}">{{ role_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Employee Field (shown only when scope=employee) -->
+                <div class="col-md-3" id="employeeField" style="display:none;">
+                    <label class="form-label fw-semibold">Employee <span class="text-danger">*</span></label>
+                    <select name="notification_employee" class="form-select">
+                        <option value="">Select employee...</option>
+                        {% for emp in all_employees %}
+                            <option value="{{ emp.id }}">{{ emp.employee_name }} ({{ emp.role }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Department Field (shown only when scope=department) -->
+                <div class="col-md-3" id="departmentField" style="display:none;">
+                    <label class="form-label fw-semibold">Department <span class="text-danger">*</span></label>
+                    <select name="notification_department" class="form-select">
+                        <option value="">Select department...</option>
+                        {% for dept_value, dept_label in department_choices %}
+                            <option value="{{ dept_value }}">{{ dept_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Notification Type -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Notification Type <span class="text-danger">*</span></label>
+                    <select name="notification_type" class="form-select" required>
+                        <option value="">All types...</option>
+                        {% for type_value, type_label in notification_types %}
+                            <option value="{{ type_value }}">{{ type_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Permission Checkboxes -->
+            <div class="row g-3 mt-3 p-3 border rounded bg-light">
+                <div class="col-12">
+                    <h6 class="fw-semibold text-muted">Permissions</h6>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check">
+                        <input type="checkbox" name="can_receive" id="canReceive" class="form-check-input" checked>
+                        <label class="form-check-label" for="canReceive">
+                            <strong>Can Receive</strong><br>
+                            <small class="text-muted">This group receives this notification type</small>
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check">
+                        <input type="checkbox" name="can_view_own" id="canViewOwn" class="form-check-input" checked>
+                        <label class="form-check-label" for="canViewOwn">
+                            <strong>View Own</strong><br>
+                            <small class="text-muted">Can view their own notifications</small>
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check">
+                        <input type="checkbox" name="can_view_department" id="canViewDept" class="form-check-input">
+                        <label class="form-check-label" for="canViewDept">
+                            <strong>View Department</strong><br>
+                            <small class="text-muted">Can view department notifications</small>
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check">
+                        <input type="checkbox" name="can_view_all" id="canViewAll" class="form-check-input">
+                        <label class="form-check-label" for="canViewAll">
+                            <strong>View All</strong><br>
+                            <small class="text-muted">Can view all system notifications</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Add/Update Permission
+                </button>
+            </div>
+        </form>
+
+        <hr class="my-4">
+
+        <!-- Existing Permissions Table -->
+        <div class="table-responsive">
+            <h6 class="fw-semibold mb-3">Current Notification Permissions</h6>
+            {% if notification_permissions %}
+                <table class="table table-hover table-sm">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Scope</th>
+                            <th>Target</th>
+                            <th>Notification Type</th>
+                            <th>Can Receive</th>
+                            <th>View Own</th>
+                            <th>View Dept</th>
+                            <th>View All</th>
+                            <th>Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for perm in notification_permissions %}
+                        <tr>
+                            <td>
+                                <span class="badge" style="background:{% if perm.scope == 'role' %}#2196F3{% elif perm.scope == 'employee' %}#FF9800{% else %}#4CAF50{% endif %};">
+                                    {{ perm.get_scope_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if perm.scope == 'role' %}
+                                    <strong>{{ perm.role }}</strong>
+                                {% elif perm.scope == 'employee' %}
+                                    {{ perm.employee.employee_name }}<br>
+                                    <small class="text-muted">({{ perm.employee.role }})</small>
+                                {% else %}
+                                    <strong>{{ perm.department }}</strong>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code>{{ perm.get_notification_type_display }}</code>
+                            </td>
+                            <td>
+                                {% if perm.can_receive %}
+                                    <span class="badge bg-success">✓ Yes</span>
+                                {% else %}
+                                    <span class="badge bg-danger">✗ No</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if perm.can_view_own %}
+                                    <span class="badge bg-info">✓</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">✗</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if perm.can_view_department %}
+                                    <span class="badge bg-info">✓</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">✗</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if perm.can_view_all %}
+                                    <span class="badge bg-warning text-dark">✓</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">✗</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ perm.updated_at|date:"M d, Y" }}
+                                </small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="alert alert-info">
+                    No custom notification permissions. Default settings apply: all users receive all notifications and can see their own.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Default Behavior Box -->
+        <div class="alert alert-secondary mt-4">
+            <h6 class="fw-semibold">Default Behavior (No Custom Rules)</h6>
+            <ul class="mb-0">
+                <li>✅ All roles receive all notification types</li>
+                <li>✅ Users can view their own notifications</li>
+                <li>❌ Users cannot view department notifications</li>
+                <li>❌ Users cannot view all system notifications</li>
+                <li>⭐ <strong>Admin/Management/President always see all notifications</strong></li>
+            </ul>
+        </div>
+    </div>
+</div>
+</div> <!-- end tab-notifications -->
+
+<script>
+function updateScopeFields() {
+    const scope = document.getElementById('notifScope').value;
+    document.getElementById('roleField').style.display = scope === 'role' ? 'block' : 'none';
+    document.getElementById('employeeField').style.display = scope === 'employee' ? 'block' : 'none';
+    document.getElementById('departmentField').style.display = scope === 'department' ? 'block' : 'none';
+    
+    // Clear other fields
+    if (scope !== 'role') document.querySelector('select[name="notification_role"]').value = '';
+    if (scope !== 'employee') document.querySelector('select[name="notification_employee"]').value = '';
+    if (scope !== 'department') document.querySelector('select[name="notification_department"]').value = '';
+}
+</script>

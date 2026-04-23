@@ -1,0 +1,53 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Under Maintenance | Unity Cement</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        body {
+            background: linear-gradient(135deg, #1F1F6B 0%, #2A2A86 50%, #3C3CA0 100%);
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .maint-card {
+            background: white;
+            border-radius: 20px;
+            padding: 50px 40px;
+            max-width: 520px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+        }
+        .maint-icon {
+            width: 90px; height: 90px;
+            background: linear-gradient(135deg, #f0a500, #e67e22);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 40px; color: white;
+            margin: 0 auto 24px;
+        }
+        .maint-title { font-size: 24px; font-weight: 700; color: #2A2A86; margin-bottom: 12px; }
+        .maint-msg { font-size: 15px; color: #4a5568; line-height: 1.7; margin-bottom: 28px; }
+        .footer-text { text-align: center; font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div style="width:100%;max-width:560px;padding:20px;">
+        <div class="maint-card">
+            <div class="maint-icon"><i class="bi bi-tools"></i></div>
+            <div class="maint-title">System Under Maintenance</div>
+            <div class="maint-msg">{{ message }}</div>
+            <div style="background:#f0f4f8;border-radius:10px;padding:14px 20px;font-size:13px;color:#718096;">
+                <i class="bi bi-clock me-2"></i>We'll be back shortly. Thank you for your patience.
+            </div>
+        </div>
+        <div class="footer-text">© 2026 All Rights Reserved. Powered By ERP Department PMC Cement LTD</div>
+    </div>
+</body>
+</html>

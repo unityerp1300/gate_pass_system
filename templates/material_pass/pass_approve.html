@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Approve — {{ gp.pass_number }}{% endblock %}
+{% block page_title %}Approve Material Gate Pass{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h4><i class="bi bi-check-circle me-2"></i>Approve / Reject — {{ gp.pass_number }}</h4>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'material_pass:pass_list' %}">Material Gate Pass</a></li>
+            <li class="breadcrumb-item active">Approve</li>
+        </ol></nav>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Pass Summary</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><th style="width:40%">Pass Number</th><td><strong>{{ gp.pass_number }}</strong></td></tr>
+                    <tr><th>Employee</th><td>{{ gp.employee.employee_name }}</td></tr>
+                    <tr><th>Department</th><td>{{ gp.employee.department }}</td></tr>
+                    <tr><th>Direction</th><td>{{ gp.get_direction_display }}</td></tr>
+                    <tr><th>Material Type</th><td>{{ gp.get_material_type_display }}</td></tr>
+                    <tr><th>Party / Vendor</th><td>{{ gp.party_name }}</td></tr>
+                    <tr><th>Date</th><td>{{ gp.pass_date }}</td></tr>
+                    <tr><th>Items</th><td>{{ gp.items.count }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Your Decision</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Action *</label>
+                        {{ form.action }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Remarks</label>
+                        {{ form.remarks }}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-send me-1"></i>Submit</button>
+                        <a href="{% url 'material_pass:pass_detail' gp.pk %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

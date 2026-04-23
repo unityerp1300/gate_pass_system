@@ -1,0 +1,262 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>{{ gp.get_type_label }} Challan - {{ gp.pass_number }}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 11px; background: #fff; }
+
+  .page { width: 210mm; margin: 0 auto; padding: 6mm 8mm; border: 1px solid #000; }
+  .header-title { text-align: center; font-size: 16px; font-weight: bold; letter-spacing: 1px; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 4px; }
+  .top-row { display: flex; justify-content: space-between; align-items: flex-start; }
+  .company-info { flex: 1; }
+  .company-info .name { font-size: 16px; font-weight: bold; }
+  .company-info p { font-size: 10px; line-height: 1.5; }
+
+  .copy-box { width: 220px; border: 1px solid #000; }
+  .copy-row { display: flex; align-items: center; border-bottom: 1px solid #000; padding: 3px 6px; font-size: 10px; }
+  .copy-row:last-child { border-bottom: none; }
+  .copy-label { flex: 1; font-weight: bold; }
+  .copy-check { width: 16px; height: 16px; border: 1px solid #000; text-align: center; line-height: 14px; font-size: 11px; margin-left: 4px; }
+
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #000; border-top: none; }
+  .info-grid .cell { padding: 3px 6px; border-right: 1px solid #000; border-bottom: 1px solid #000; font-size: 10px; }
+  .info-grid .cell:nth-child(even) { border-right: none; }
+  .info-grid .cell b { margin-right: 6px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #000; border-top: none; }
+  .two-col .left { border-right: 1px solid #000; }
+  .two-col .col-cell { padding: 3px 6px; border-bottom: 1px solid #000; font-size: 10px; }
+  .two-col .col-cell:last-child { border-bottom: none; }
+  .two-col .col-cell b { margin-right: 4px; }
+
+  .consign-row { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #000; border-top: none; }
+  .consign-row .col { padding: 4px 6px; border-right: 1px solid #000; font-size: 10px; line-height: 1.6; }
+  .consign-row .col:last-child { border-right: none; }
+  .consign-row .col-title { font-weight: bold; border-bottom: 1px solid #000; padding: 3px 6px; font-size: 10px; }
+
+  table.items { width: 100%; border-collapse: collapse; border: 1px solid #000; border-top: none; }
+  table.items th, table.items td { border: 1px solid #000; padding: 3px 5px; font-size: 10px; }
+  table.items th { font-weight: bold; text-align: center; background: #fff; }
+  table.items td { vertical-align: top; }
+  table.items td.center { text-align: center; }
+  table.items td.right { text-align: right; }
+  .reason-row td { height: 18mm; vertical-align: top; }
+
+  .bottom-section { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #000; border-top: none; }
+  .bottom-section .left { border-right: 1px solid #000; }
+  .hsn-table { width: 100%; border-collapse: collapse; }
+  .hsn-table th, .hsn-table td { border: 1px solid #000; padding: 3px 5px; font-size: 10px; text-align: center; }
+  .hsn-table th { font-weight: bold; }
+  .tax-table { width: 100%; border-collapse: collapse; }
+  .tax-table td { border: 1px solid #000; padding: 3px 5px; font-size: 10px; }
+  .tax-table td.right { text-align: right; }
+  .tax-table td.center { text-align: center; }
+  .tax-label { font-weight: bold; }
+
+  .bank-sig { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #000; border-top: none; }
+  .bank-sig .left { border-right: 1px solid #000; }
+  .bank-table { width: 100%; border-collapse: collapse; }
+  .bank-table td { border: 1px solid #000; padding: 3px 6px; font-size: 10px; }
+  .bank-table td:first-child { font-weight: bold; width: 110px; }
+  .sig-box { padding: 6px; font-size: 10px; font-weight: bold; text-align: right; }
+
+  @media print {
+    body { margin: 0; }
+    .page { border: none; margin: 0; padding: 6mm 8mm; }
+    .no-print { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="no-print" style="padding:10px; background:#f0f0f0; text-align:center;">
+  <button onclick="window.print()" style="padding:8px 24px; font-size:14px; cursor:pointer;">Print</button>
+  <button onclick="window.close()" style="padding:8px 16px; font-size:14px; cursor:pointer; margin-left:10px;">Close</button>
+</div>
+
+{% for copy_code, copy_label in copies %}
+<div class="page"{% if not forloop.last %} style="page-break-after: always;"{% endif %}>
+
+  <div class="header-title" style="display:flex; align-items:center; justify-content:center; gap:20px;">
+    <img src="{% static 'images/Unity_Logo_Horizontal.png' %}" alt="Unity Cement" style="height:32px; object-fit:contain;">
+    <span>{{ gp.get_type_label|upper }} CHALLAN</span>
+    <span style="font-size:11px; border:1px solid #000; padding:3px 8px; min-width:150px; text-align:center;">{{ copy_label }}</span>
+    <span style="font-size:11px; font-weight:normal; display:flex; gap:12px; align-items:center;">
+      <label style="display:flex; align-items:center; gap:4px; cursor:default;">
+        <span style="width:14px; height:14px; border:1.5px solid #000; display:inline-flex; align-items:center; justify-content:center; font-size:12px;">{% if gp.is_returnable %}&#10003;{% endif %}</span>
+        Returnable
+      </label>
+      <label style="display:flex; align-items:center; gap:4px; cursor:default;">
+        <span style="width:14px; height:14px; border:1.5px solid #000; display:inline-flex; align-items:center; justify-content:center; font-size:12px;">{% if not gp.is_returnable %}&#10003;{% endif %}</span>
+        Non-Returnable
+      </label>
+    </span>
+  </div>
+
+  <div class="top-row" style="border:1px solid #000; padding:6px;">
+    <div class="company-info">
+      <div class="name">{{ gp.consignor_name }}</div>
+      <p>Factory Address :- {{ gp.consignor_address }}</p>
+      {% if gp.consignor_office_address %}<p>Office Address :- {{ gp.consignor_office_address }}</p>{% endif %}
+    </div>
+    <div class="copy-box">
+      <div class="copy-row">
+        <span class="copy-label">Original For Buyer</span>
+        <span class="copy-check">{% if copy_code == 'original' %}&#10003;{% endif %}</span>
+      </div>
+      <div class="copy-row">
+        <span class="copy-label">Duplicate For Transporter</span>
+        <span class="copy-check">{% if copy_code == 'duplicate' %}&#10003;{% endif %}</span>
+      </div>
+      <div class="copy-row">
+        <span class="copy-label">Triplicate For Supplier</span>
+        <span class="copy-check">{% if copy_code == 'triplicate' %}&#10003;{% endif %}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="cell"><b>GSTIN NO</b>{{ gp.consignor_gstin }}</div>
+    <div class="cell" style="font-weight:bold; text-align:center;">Details of Dispatch</div>
+    <div class="cell"><b>PAN No.</b>{{ gp.consignor_pan }}</div>
+    <div class="cell"><b>Veh.No :</b> {{ gp.vehicle_number }}</div>
+  </div>
+
+  <div class="two-col">
+    <div class="left">
+      <div class="col-cell"><b>Invoice Serial No.</b> {{ gp.pass_number }}</div>
+      <div class="col-cell"><b>Invoice Date:</b> {{ gp.pass_date }}</div>
+    </div>
+    <div>
+      <div class="col-cell"><b>Transporter Name :</b> {{ gp.transporter_name }}</div>
+      <div class="col-cell"><b>LR NO :</b> {{ gp.lr_number }}</div>
+      <div class="col-cell"><b>Mode Of Transport :</b> {{ gp.get_transport_mode_display }}</div>
+    </div>
+  </div>
+
+  <div class="consign-row">
+    <div>
+      <div class="col-title">Name and Address Consignor :</div>
+      <div class="col">
+        <b>{{ gp.consignor_name }}</b><br>
+        {{ gp.consignor_address }}<br>
+        <b>Contact Person:</b> {{ gp.consignor_contact }}<br>
+        <b>State:</b> {{ gp.consignor_state }} &nbsp;&nbsp; <b>State Code :</b> {{ gp.consignor_state_code }}<br>
+        <b>PAN No:</b> {{ gp.consignor_pan }}<br>
+        <b>GSTIN/Unique ID:</b> {{ gp.consignor_gstin }}
+      </div>
+    </div>
+    <div>
+      <div class="col-title">Details of Consignee (Shipped to):</div>
+      <div class="col">
+        {{ gp.party_name }}<br>
+        {{ gp.party_address }}<br><br>
+        <b>Contact Person :</b> {{ gp.party_contact_person }}<br>
+        <b>Contact Number :</b> {{ gp.party_contact_number }}<br>
+        <b>State :</b> {{ gp.party_state }}<br>
+        <b>PAN No:</b> {{ gp.party_pan }}<br>
+        <b>GSTIN/Unique ID :</b> {{ gp.party_gstin }}
+      </div>
+    </div>
+  </div>
+
+  <table class="items">
+    <thead>
+      <tr>
+        <th style="width:30px;">S.No</th>
+        <th>Particulars</th>
+        <th style="width:80px;">HSN Code</th>
+        <th style="width:80px;">Quantity</th>
+        <th style="width:80px;">Rate Per Unit</th>
+        <th style="width:80px;">Total Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in gp.items.all %}
+      <tr>
+        <td class="center">{{ forloop.counter }}</td>
+        <td>{{ item.description }}</td>
+        <td class="center">{{ item.hsn_code }}</td>
+        <td class="center">{{ item.quantity }} {{ item.unit }}</td>
+        <td class="right">{{ item.rate }}</td>
+        <td class="right">{{ item.total_value }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="height:40mm;"></td></tr>
+      {% endfor %}
+      <tr class="reason-row">
+        <td colspan="2" style="vertical-align:top;"><b>Reason:</b><br>{{ gp.reason }}</td>
+        <td colspan="4"></td>
+      </tr>
+      <tr>
+        <td colspan="4" style="text-align:right; font-weight:bold;">Total:</td>
+        <td></td>
+        <td class="right">{{ gp.get_subtotal }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="bottom-section">
+    <div class="left" style="padding:4px;">
+      <div style="font-weight:bold; font-size:10px; text-align:center; border-bottom:1px solid #000; padding-bottom:3px; margin-bottom:3px;">HSN Wise Summary</div>
+      <table class="hsn-table">
+        <thead>
+          <tr><th>No.</th><th>HSN Code</th><th>CGST</th><th>SGST</th></tr>
+        </thead>
+        <tbody>
+          {% for item in gp.items.all %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ item.hsn_code|default:"0" }}</td>
+            <td>-</td>
+            <td>-</td>
+          </tr>
+          {% empty %}
+          <tr><td>1</td><td>0</td><td>-</td><td>-</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table class="tax-table" style="height:100%;">
+        <tr><td colspan="3" class="right">-</td></tr>
+        <tr><td colspan="2" class="right tax-label">Total Taxable Value :</td><td class="right">{{ gp.get_subtotal }}</td></tr>
+        <tr><td colspan="3" style="font-weight:bold; text-align:center;">Goods and Services Tax</td></tr>
+        <tr><td class="tax-label">Tax Type</td><td class="center">Rate</td><td class="center">Tax Amount</td></tr>
+        {% if gp.gst_type == 'cgst_sgst' %}
+        <tr><td class="tax-label">CGST</td><td class="center">{{ gp.gst_rate|floatformat:2 }}% / 2 = {% widthratio gp.gst_rate|add:"0" 2 1 %}%</td><td class="right">{{ gp.get_cgst_amount }}</td></tr>
+        <tr><td class="tax-label">SGST</td><td class="center">{{ gp.gst_rate|floatformat:2 }}% / 2 = {% widthratio gp.gst_rate|add:"0" 2 1 %}%</td><td class="right">{{ gp.get_sgst_amount }}</td></tr>
+        {% elif gp.gst_type == 'igst' %}
+        <tr><td class="tax-label">IGST</td><td class="center">{{ gp.gst_rate|floatformat:2 }}%</td><td class="right">{{ gp.get_igst_amount }}</td></tr>
+        {% else %}
+        <tr><td colspan="2" class="tax-label">GST</td><td class="right">Exempt / Nil</td></tr>
+        {% endif %}
+        <tr><td colspan="2" class="right tax-label">Rounding off</td><td class="right">{{ gp.rounding_off }}</td></tr>
+        <tr><td colspan="2" class="right tax-label">Invoice Total</td><td class="right">{{ gp.get_grand_total }}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="bank-sig">
+    <div class="left">
+      <div style="font-weight:bold; text-align:center; border-bottom:1px solid #000; padding:3px; font-size:10px;">Details of Bank for Payment</div>
+      <table class="bank-table">
+        <tr><td>Bank Name &amp;<br>Account Number</td><td>{{ gp.bank_name }}<br>{{ gp.bank_account_number }}</td></tr>
+        <tr><td>IFSC Code</td><td>{{ gp.bank_ifsc }}</td></tr>
+      </table>
+      <div style="height:20mm;"></div>
+    </div>
+    <div>
+      <div class="sig-box">For {{ gp.consignor_name }}</div>
+      <div style="height:25mm;"></div>
+      <div style="text-align:center; font-size:10px; border-top:1px solid #000; padding-top:4px; margin:0 10px;">Authorised Signatory</div>
+    </div>
+  </div>
+
+</div>
+{% endfor %}
+</body>
+</html>
